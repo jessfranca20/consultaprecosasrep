@@ -6,6 +6,14 @@
 <title>AS Representacoes - Consulta & Pre-Orcamento IMAB</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BR2TY8SHWQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-BR2TY8SHWQ');
+</script>
 <style>
 :root{--navy:#0f2244;--gold:#c9a84c;--bg:#f0f2f5;--border:#dde3ec;--text:#1a1a2e;--text2:#5a6480;--green:#1d6b3e;--red:#c0392b}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -193,7 +201,14 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
         <div class="ctitle"><i class="fa fa-user"></i> Dados do Cliente</div>
         <div class="fr">
           <div class="fl"><label>Nome / Razao Social *</label><input type="text" id="cNome" placeholder="Ex: Moveis Alfa Ltda"></div>
-          <div class="fl"><label>CNPJ</label><input type="text" id="cCNPJ" placeholder="00.000.000/0001-00" maxlength="18"></div>
+          <div class="fl">
+            <label>CNPJ</label>
+            <div style="position:relative">
+              <input type="text" id="cCNPJ" placeholder="00.000.000/0001-00" maxlength="18" style="width:100%;padding-right:32px">
+              <span id="cnpjStatus" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:13px"></span>
+            </div>
+            <span id="cnpjMsg" style="font-size:11px;color:var(--text2);margin-top:3px"></span>
+          </div>
         </div>
         <div class="fr">
           <div class="fl"><label>WhatsApp</label><input type="text" id="cWhats" placeholder="(00) 00000-0000"></div>
@@ -14317,6 +14332,86 @@ function renderItems() {
   document.getElementById("totalVal").textContent = fmt(calcTotal());
 }
 
+
+/* ---------- CNPJ ---------- */
+function cnpjMask(v) {
+  v = v.replace(/\D/g, "").slice(0, 14);
+  if (v.length > 12) v = v.slice(0,2)+"."+v.slice(2,5)+"."+v.slice(5,8)+"/"+v.slice(8,12)+"-"+v.slice(12);
+  else if (v.length > 8) v = v.slice(0,2)+"."+v.slice(2,5)+"."+v.slice(5,8)+"/"+v.slice(8);
+  else if (v.length > 5) v = v.slice(0,2)+"."+v.slice(2,5)+"."+v.slice(5);
+  else if (v.length > 2) v = v.slice(0,2)+"."+v.slice(2);
+  return v;
+}
+
+function cnpjValido(v) {
+  var c = v.replace(/\D/g,"");
+  if (c.length !== 14 || /^(\d)\1+$/.test(c)) return false;
+  var t = c.slice(0,12), d1 = 0, d2 = 0;
+  var p1 = [5,4,3,2,9,8,7,6,5,4,3,2];
+  var p2 = [6,5,4,3,2,9,8,7,6,5,4,3,2];
+  for (var i=0;i<12;i++) d1 += parseInt(t[i])*p1[i];
+  d1 = d1%11 < 2 ? 0 : 11-(d1%11);
+  for (var j=0;j<13;j++) d2 += parseInt((t+d1)[j])*p2[j];
+  d2 = d2%11 < 2 ? 0 : 11-(d2%11);
+  return parseInt(c[12])===d1 && parseInt(c[13])===d2;
+}
+
+function setCnpjStatus(icon, msg, color) {
+  document.getElementById("cnpjStatus").textContent = icon;
+  var msgEl = document.getElementById("cnpjMsg");
+  msgEl.textContent = msg;
+  msgEl.style.color = color || "var(--text2)";
+}
+
+function buscarCNPJ(cnpj) {
+  var nums = cnpj.replace(/\D/g,"");
+  setCnpjStatus("⏳","Consultando Receita Federal...","var(--text2)");
+  fetch("https://publica.cnpj.ws/cnpj/" + nums)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.erro || !d.razao_social) { setCnpjStatus("❌","CNPJ não encontrado","var(--red)"); return; }
+      // Razão social
+      document.getElementById("cNome").value = d.razao_social || "";
+      // Email — pega o primeiro email disponível
+      var email = "";
+      if (d.emails && d.emails.length) email = d.emails[0].email;
+      if (email) document.getElementById("cEmail").value = email;
+      // Telefone — pega o primeiro disponível
+      var tel = "";
+      if (d.telefones && d.telefones.length) {
+        var t0 = d.telefones[0];
+        tel = "(" + (t0.ddd||"") + ") " + (t0.numero||"");
+      }
+      if (tel.trim().length > 3) document.getElementById("cWhats").value = tel;
+      setCnpjStatus("✅", d.razao_social + (d.municipio ? " — " + d.municipio.descricao : ""), "var(--green)");
+    })
+    .catch(function(){
+      // Fallback: tenta ReceitaWS
+      fetch("https://receitaws.com.br/v1/cnpj/" + nums)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d.status === "ERROR") { setCnpjStatus("❌","CNPJ não encontrado","var(--red)"); return; }
+          document.getElementById("cNome").value = d.nome || "";
+          if (d.email) document.getElementById("cEmail").value = d.email;
+          if (d.telefone) document.getElementById("cWhats").value = d.telefone;
+          setCnpjStatus("✅", d.nome + (d.municipio ? " — " + d.municipio : ""), "var(--green)");
+        })
+        .catch(function(){
+          setCnpjStatus("⚠️","Consulta indisponível. Preencha manualmente.","#b45309");
+        });
+    });
+}
+
+document.getElementById("cCNPJ").addEventListener("input", function() {
+  var raw = this.value;
+  var masked = cnpjMask(raw);
+  if (masked !== raw) this.value = masked;
+  var nums = masked.replace(/\D/g,"");
+  if (nums.length < 14) { setCnpjStatus("","",""); return; }
+  if (!cnpjValido(masked)) { setCnpjStatus("❌","CNPJ inválido","var(--red)"); return; }
+  buscarCNPJ(masked);
+});
+
 /* ---------- HISTORY ---------- */
 function getHist() { try { return JSON.parse(localStorage.getItem("asrep_h5") || "[]"); } catch(e) { return []; } }
 function saveHist(h) { localStorage.setItem("asrep_h5", JSON.stringify(h)); }
@@ -14468,7 +14563,7 @@ function gerarPDF() {
   doc.setTextColor(100,70,0); doc.setFontSize(8); doc.setFont("helvetica","bold");
   doc.text("AVISO IMPORTANTE", M+3, yD+4);
   doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
-  var av = "Este documento nao possui valor comercial ate a efetivacao do pedido no sistema IMAB pelo representante autorizado.";
+  var av = "Este documento e apenas uma previa para consulta de precos.";
   doc.text(doc.splitTextToSize(av, W-2*M-6), M+3, yD+10);
 
   /* Footer */
