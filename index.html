@@ -14280,7 +14280,7 @@ document.getElementById("pSearch").addEventListener("input", function() {
   dd.innerHTML = res.map(function(p) {
     var up = getPrice(p.base);
     var pl = selDisc ? (fmt(up) + " (" + selDisc + "% off)") : (fmt(p.base) + " (base)");
-    return "<div class='di' onclick='addItem(\"" + p.cod + "\")'>" +
+    return "<div class='di' onclick='addItem(\"" + p.cod + "\",\"" + p.tab + "\")'>" +
       "<div class='din'><span class='dn'>" + p.nome + "</span>" +
       "<span class='dc'>" + p.cod + " - Tab." + p.tab + "</span></div>" +
       "<span class='dpr'>" + pl + "</span></div>";
@@ -14293,8 +14293,8 @@ document.addEventListener("click", function(e) {
     document.getElementById("pDrop").classList.remove("open");
 });
 
-function addItem(cod) {
-  var p = PRODUTOS.find(function(x) { return x.cod === cod; });
+function addItem(cod, tab) {
+  var p = PRODUTOS.find(function(x) { return x.cod === cod && (!tab || x.tab === tab); });
   if (!p) return;
   var price = getPrice(p.base);
   var ex = orcItems.find(function(x) { return x.cod === cod; });
