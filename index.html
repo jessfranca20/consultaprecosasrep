@@ -14514,8 +14514,7 @@ function gerarPDF() {
   doc.setFillColor(15,34,68); doc.rect(M, y, W-2*M, 8, "F");
   doc.setTextColor(255,255,255); doc.setFontSize(7.5); doc.setFont("helvetica","bold");
   doc.text("Codigo",    M+2,    y+5.5);
-  doc.text("Descricao", M+24,   y+5.5);
-  doc.text("Tab.", W-76, y+5.5, {align:"right"});
+  doc.text("Descricao", M+26,   y+5.5);
   doc.text("Qtd",  W-58, y+5.5, {align:"right"});
   doc.text("Unit.", W-36, y+5.5, {align:"right"});
   doc.text("Total", W-M-1, y+5.5, {align:"right"});
@@ -14528,9 +14527,8 @@ function gerarPDF() {
     if (idx % 2 === 0) { doc.setFillColor(248,250,252); doc.rect(M, y, W-2*M, 8, "F"); }
     doc.setFontSize(7.5);
     doc.text(item.cod, M+2, y+5.5);
-    var nm = item.nome.length > 48 ? item.nome.slice(0,48) + "..." : item.nome;
-    doc.text(nm, M+24, y+5.5);
-    doc.text("T" + item.tab, W-76, y+5.5, {align:"right"});
+    var nm = item.nome.length > 58 ? item.nome.slice(0,58) + "..." : item.nome;
+    doc.text(nm, M+26, y+5.5);
     doc.text(String(item.qty), W-58, y+5.5, {align:"right"});
     doc.text(fmt(item.unitPrice), W-36, y+5.5, {align:"right"});
     doc.text(fmt(item.unitPrice * item.qty), W-M-1, y+5.5, {align:"right"});
