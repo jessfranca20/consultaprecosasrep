@@ -147,6 +147,11 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
 .ha.del:hover{border-color:var(--red);color:var(--red)}
 .badge{display:inline-block;background:var(--gold);color:var(--navy);font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:5px}
 .norc{font-size:11px;color:var(--text2);text-align:right;margin-bottom:7px}
+.alert-warn{background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;margin-top:10px;display:none}
+.alert-warn.show{display:block}
+.ipi-badge{display:inline-block;background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;border-radius:4px;font-size:10px;font-weight:700;padding:1px 5px;margin-left:4px}
+.price-final{font-size:13px;font-weight:700;color:var(--navy)}
+.price-ipi{font-size:10px;color:var(--text2);font-weight:400}
 .cd-seg{background:#fde8e8;color:#b91c1c}
 .cd-bat{background:#fef3c7;color:#92400e}
 .cd-trav{background:#e0f2fe;color:#0369a1}
@@ -166,7 +171,8 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
   <nav class="tab-nav">
     <button class="tbtn active" onclick="showPage('c',this)"><i class="fa fa-table"></i> Consulta IMAB</button>
     <button class="tbtn" onclick="showPage('cd',this)"><i class="fa fa-door-open"></i> Comfort Door</button>
-    <button class="tbtn" onclick="showPage('o',this)"><i class="fa fa-file-invoice-dollar"></i> Pre-Orcamento</button>
+    <button class="tbtn" onclick="showPage('o',this)"><i class="fa fa-file-invoice-dollar"></i> Pre-Orc. IMAB</button>
+    <button class="tbtn" onclick="showPage('ocd',this)"><i class="fa fa-file-invoice-dollar"></i> Pre-Orc. Comfort Door</button>
   </nav>
 </header>
 
@@ -14266,7 +14272,7 @@ function setFilter(f) {
   renderTable();
 }
 
-document.getElementById("sInput").addEventListener("input", filterTable);
+(function(){ var el=document.getElementById("sInput"); if(el) el.addEventListener("input", filterTable); })();
 renderTable();
 
 /* ---------- TABS ---------- */
@@ -14275,8 +14281,9 @@ function showPage(p, btn) {
   document.querySelectorAll(".tbtn").forEach(function(e) { e.classList.remove("active"); });
   document.getElementById("page-" + p).classList.add("active");
   btn.classList.add("active");
-  if (p === "o") renderHist();
-  if (p === "cd") renderCD();
+  if (p === "o")   renderHist();
+  if (p === "cd")  renderCD();
+  if (p === "ocd") renderCDHist();
 }
 
 /* ---------- ORC STATE ---------- */
@@ -14290,7 +14297,7 @@ function genNum() {
     "-" + String(Math.floor(Math.random()*9000)+1000);
 }
 var NUM_ORC = genNum();
-document.getElementById("numOrcLabel").textContent = "No " + NUM_ORC;
+(function(){ var el = document.getElementById("numOrcLabel"); if(el) el.textContent = "No " + NUM_ORC; })();
 
 function setDiscount(pct) {
   selDisc = pct;
@@ -14304,7 +14311,7 @@ function setDiscount(pct) {
 function getPrice(base) { return dp(base, selDisc); }
 
 /* ---------- PRODUCT SEARCH IN ORC ---------- */
-document.getElementById("pSearch").addEventListener("input", function() {
+(function(){ var el=document.getElementById("pSearch"); if(el) el.addEventListener("input", function() {
   var q = this.value;
   var dd = document.getElementById("pDrop");
   if (!q.trim()) { dd.classList.remove("open"); return; }
@@ -14324,7 +14331,7 @@ document.getElementById("pSearch").addEventListener("input", function() {
       "<span class='dpr'>" + pl + "</span></div>";
   }).join("");
   dd.classList.add("open");
-});
+  }); })();
 
 document.addEventListener("click", function(e) {
   if (!e.target.closest("#pSearch") && !e.target.closest("#pDrop"))
@@ -14440,7 +14447,7 @@ function buscarCNPJ(cnpj) {
     });
 }
 
-document.getElementById("cCNPJ").addEventListener("input", function() {
+(function(){ var el=document.getElementById("cCNPJ"); if(el) el.addEventListener("input", function() {
   var raw = this.value;
   var masked = cnpjMask(raw);
   if (masked !== raw) this.value = masked;
@@ -14448,13 +14455,13 @@ document.getElementById("cCNPJ").addEventListener("input", function() {
   if (nums.length < 14) { setCnpjStatus("","",""); return; }
   if (!cnpjValido(masked)) { setCnpjStatus("❌","CNPJ inválido","var(--red)"); return; }
   buscarCNPJ(masked);
-});
+  }); })();
 
 /* ---------- HISTORY ---------- */
 function getHist() { try { return JSON.parse(localStorage.getItem("asrep_h5") || "[]"); } catch(e) { return []; } }
 function saveHist(h) { localStorage.setItem("asrep_h5", JSON.stringify(h)); }
 
-document.getElementById("hSearch").addEventListener("input", renderHist);
+(function(){ var el=document.getElementById("hSearch"); if(el) el.addEventListener("input", renderHist); })();
 
 function renderHist() {
   var q = (document.getElementById("hSearch").value || "").toLowerCase();
@@ -14498,7 +14505,7 @@ function delHist(hid) {
 
 function novoOrc() {
   orcItems = []; NUM_ORC = genNum();
-  document.getElementById("numOrcLabel").textContent = "No " + NUM_ORC;
+  (function(){ var el = document.getElementById("numOrcLabel"); if(el) el.textContent = "No " + NUM_ORC; })();
   ["cNome","cCNPJ","cWhats","cEmail","obs"].forEach(function(id) { document.getElementById(id).value = ""; });
   selDisc = 0;
   ["10","15","20"].forEach(function(x) { document.getElementById("dBtn"+x).className = "dbtn"; });
@@ -14983,12 +14990,470 @@ function setCDFilter(f) {
   renderCD();
 }
 
-document.getElementById("cdInput").addEventListener("input", function(){
-  cdQ = this.value; cdVis = 200; renderCD();
-});
+(function(){ var el=document.getElementById("cdInput"); if(el) el.addEventListener("input", function(){ cdQ=this.value; cdVis=200; renderCD(); }); })();
 
 renderCD();
 
+
+/* ========== PRE-ORCAMENTO COMFORT DOOR ========== */
+var cdOrcItems = [], cdNextId = 1;
+var CD_NUM_ORC = cdGenNum();
+function cdGenNum() {
+  var d = new Date();
+  return "CD-" + String(d.getFullYear()).slice(-2) + String(d.getMonth()+1).padStart(2,"0") + String(d.getDate()).padStart(2,"0") + "-" + String(Math.floor(Math.random()*9000)+1000);
+}
+(function(){ var el = document.getElementById("cdNumOrcLabel"); if(el) el.textContent = "No " + CD_NUM_ORC; })();
+
+(function(){ var el=document.getElementById("cdCNPJ"); if(el) el.addEventListener("input", function() {
+  var masked = cnpjMask(this.value);
+  if (masked !== this.value) this.value = masked;
+  var nums = masked.replace(/\D/g,"");
+  if (nums.length === 14 && cnpjValido(masked)) {
+    fetch("https://publica.cnpj.ws/cnpj/" + nums)
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if (!d.erro && d.razao_social) {
+          document.getElementById("cdNome").value = d.razao_social || "";
+          if (d.emails && d.emails.length) document.getElementById("cdEmail").value = d.emails[0].email;
+          if (d.telefones && d.telefones.length) {
+            var t = d.telefones[0];
+            document.getElementById("cdWhats").value = "(" + (t.ddd||"") + ") " + (t.numero||"");
+          }
+        }
+      }).catch(function(){});
+  }
+  }); })();
+
+document.addEventListener("input", function(e) {
+  if (!e.target || e.target.id !== "cdPSearch") return;
+  var dd = document.getElementById("cdPDrop");
+  if (!dd) return;
+  var q = e.target.value;
+  if (!q.trim()) { dd.classList.remove("open"); return; }
+  var ql = q.toLowerCase();
+  var terms = ql.split(/\s+/).filter(function(t){ return t.length > 0; });
+  var res = PRODUTOS_CD.filter(function(p){
+    var hay = p.desc.toLowerCase() + " " + p.sku.toLowerCase() + " " + p.sub.toLowerCase();
+    return terms.every(function(t){ return hay.indexOf(t) >= 0; });
+  }).slice(0, 12);
+  if (!res.length) { dd.classList.remove("open"); return; }
+  dd.innerHTML = res.map(function(p){
+    var ipiPct = parseFloat(p.ipi.replace(",",".").replace("%","")) || 0;
+    var comIpi = p.val * (1 + ipiPct/100);
+    return "<div class='di' onclick='cdAddItem(\"" + p.sku + "\")'>" +
+      "<div class='din'><span class='dn'>" + p.desc + "</span>" +
+      "<span class='dc'>" + p.sku + " &middot; " + p.sub + "</span></div>" +
+      "<div style='text-align:right;white-space:nowrap'>" +
+        "<div style='font-size:12px;font-weight:700;color:var(--green)'>" + fmt(comIpi) + "</div>" +
+        "<div style='font-size:10px;color:#c2410c'>IPI " + p.ipi + "</div>" +
+      "</div></div>";
+  }).join("");
+  dd.classList.add("open");
+})
+
+document.addEventListener("click", function(e){
+  if (!e.target.closest("#cdPSearch") && !e.target.closest("#cdPDrop"))
+    document.getElementById("cdPDrop").classList.remove("open");
+});
+
+function cdAddItem(sku) {
+  var p = PRODUTOS_CD.find(function(x){ return x.sku === sku; });
+  if (!p) return;
+  var ipiPct = parseFloat(p.ipi.replace(",",".").replace("%","")) || 0;
+  var ex = cdOrcItems.find(function(x){ return x.sku === sku; });
+  if (ex) { ex.qty++; }
+  else cdOrcItems.push({id:cdNextId++, sku:p.sku, desc:p.desc, sub:p.sub, val:p.val, ipiPct:ipiPct, ipiStr:p.ipi, qty:1});
+  document.getElementById("cdPSearch").value = "";
+  document.getElementById("cdPDrop").classList.remove("open");
+  cdRenderItems();
+}
+
+function cdRemoveItem(id) { cdOrcItems = cdOrcItems.filter(function(x){ return x.id !== id; }); cdRenderItems(); }
+
+function cdUpdateQty(id, v) {
+  var i = cdOrcItems.find(function(x){ return x.id === id; });
+  if (i) i.qty = Math.max(1, parseInt(v) || 1);
+  cdRenderItems();
+}
+
+function cdCalcTotals() {
+  var sub = 0, ipiTotal = 0;
+  cdOrcItems.forEach(function(i){
+    var lineVal = i.val * i.qty;
+    sub += lineVal;
+    ipiTotal += lineVal * i.ipiPct / 100;
+  });
+  return {sub:sub, ipi:ipiTotal, total:sub+ipiTotal};
+}
+
+function cdRenderItems() {
+  var table = document.getElementById("cdITable");
+  var empty = document.getElementById("cdEmptyMsg");
+  var totWrap = document.getElementById("cdTotaisWrap");
+  table.style.display   = cdOrcItems.length ? "table" : "none";
+  empty.style.display   = cdOrcItems.length ? "none"  : "block";
+  totWrap.style.display = cdOrcItems.length ? "block" : "none";
+
+  document.getElementById("cdIBody").innerHTML = cdOrcItems.map(function(i){
+    var lineVal = i.val * i.qty;
+    var lineIpi = lineVal * i.ipiPct / 100;
+    return "<tr>" +
+      "<td><div style='font-weight:500;font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' title='" + i.desc + "'>" + i.desc + "</div>" +
+           "<div style='font-size:10px;color:var(--text2)'>" + i.sku + " &middot; " + i.sub + "</div></td>" +
+      "<td style='text-align:center'><input class='qi' type='number' min='1' value='" + i.qty + "' onchange='cdUpdateQty(" + i.id + ",this.value)'></td>" +
+      "<td style='text-align:right;font-size:11.5px'>" + fmt(i.val) + "</td>" +
+      "<td style='text-align:right;font-size:11px;color:#c2410c'>" + i.ipiStr + "<br>" + fmt(lineIpi) + "</td>" +
+      "<td style='text-align:right;font-weight:700;font-size:11.5px'>" + fmt(lineVal + lineIpi) + "</td>" +
+      "<td><button class='rb' onclick='cdRemoveItem(" + i.id + ")'><i class='fa fa-trash'></i></button></td>" +
+    "</tr>";
+  }).join("");
+
+  var t = cdCalcTotals();
+  document.getElementById("cdSubtotalVal").textContent = fmt(t.sub);
+  document.getElementById("cdIpiTotal").textContent    = fmt(t.ipi);
+  document.getElementById("cdTotalVal").textContent    = fmt(t.total);
+
+  var alertMin  = document.getElementById("cdAlertMinimo");
+  var alertOk   = document.getElementById("cdAlertOk");
+  var prazoInfo = document.getElementById("cdPrazoInfo");
+  var prazoText = document.getElementById("cdPrazoText");
+
+  if (!cdOrcItems.length) {
+    alertMin.classList.remove("show"); alertOk.classList.remove("show");
+    prazoInfo.style.display = "none";
+  } else {
+    if (t.total < 800) { alertMin.classList.add("show"); alertOk.classList.remove("show"); }
+    else { alertMin.classList.remove("show"); alertOk.classList.add("show"); }
+    var prazo = t.total > 10000 ? "Prazo medio 56 dias - Parcelas: 42/56/70 dias" :
+                t.total > 5000  ? "Prazo medio 49 dias - Parcelas: 42/49/56 dias" :
+                t.total > 2500  ? "Prazo medio 42 dias - Parcelas: 35/42/49 dias" :
+                t.total > 1000  ? "Prazo medio 35 dias - Parcelas: 28/35/42 dias" :
+                                  "Prazo medio 28 dias - Parcela unica: 28 dias";
+    prazoText.textContent = prazo;
+    prazoInfo.style.display = "block";
+  }
+}
+
+function getCDHist() { try { return JSON.parse(localStorage.getItem("asrep_cdh1") || "[]"); } catch(e) { return []; } }
+function saveCDHist(h) { localStorage.setItem("asrep_cdh1", JSON.stringify(h)); }
+
+(function(){ var el = document.getElementById("cdHSearch"); if(el) el.addEventListener("input", renderCDHist); })();
+
+function renderCDHist() {
+  var q = (document.getElementById("cdHSearch").value || "").toLowerCase();
+  var all = getCDHist();
+  document.getElementById("cdHCount").textContent = all.length;
+  var fil = all.filter(function(x){ return !q || x.nome.toLowerCase().indexOf(q) >= 0; });
+  var list = document.getElementById("cdHList");
+  if (!fil.length) { list.innerHTML = "<div style='text-align:center;padding:18px;color:var(--text2);font-size:12px'>Sem historico</div>"; return; }
+  list.innerHTML = fil.slice().reverse().map(function(x){
+    return "<div class='hi'><div class='hname'>" + x.nome + "</div>" +
+      "<div class='hmeta'>" + (x.cnpj?"CNPJ: "+x.cnpj+" &middot; ":"") + (x.whats||"") + "</div>" +
+      "<div class='hmeta'>" + x.numOrc + " &middot; " + x.data + " &middot; " + x.nitens + " item(s)</div>" +
+      "<div class='htot'>" + fmt(x.total) + " c/IPI</div>" +
+      "<div class='hacts'>" +
+        "<button class='ha' onclick='loadCDHist(\"" + x.id + "\")'>Reutilizar</button>" +
+        "<button class='ha del' onclick='delCDHist(\"" + x.id + "\")'>Excluir</button>" +
+      "</div></div>";
+  }).join("");
+}
+
+function loadCDHist(hid) {
+  var h = getCDHist().find(function(x){ return x.id===hid; });
+  if (!h) return;
+  document.getElementById("cdNome").value  = h.nome  || "";
+  document.getElementById("cdCNPJ").value  = h.cnpj  || "";
+  document.getElementById("cdWhats").value = h.whats || "";
+  document.getElementById("cdEmail").value = h.email || "";
+  cdOrcItems = (h.items||[]).map(function(i){ return Object.assign({},i,{id:cdNextId++}); });
+  cdRenderItems();
+}
+
+function delCDHist(hid) { saveCDHist(getCDHist().filter(function(x){ return x.id!==hid; })); renderCDHist(); }
+
+function novoOrcCD() {
+  cdOrcItems = []; CD_NUM_ORC = cdGenNum();
+  (function(){ var el = document.getElementById("cdNumOrcLabel"); if(el) el.textContent = "No " + CD_NUM_ORC; })();
+  ["cdNome","cdCNPJ","cdWhats","cdEmail","cdObs"].forEach(function(id){ document.getElementById(id).value=""; });
+  cdRenderItems();
+}
+
+function gerarPDFCD() {
+  if (!cdOrcItems.length) { alert("Adicione ao menos um produto."); return; }
+  var nome = document.getElementById("cdNome").value.trim();
+  if (!nome) { alert("Informe o nome do cliente."); return; }
+  var cnpj  = document.getElementById("cdCNPJ").value.trim();
+  var whats = document.getElementById("cdWhats").value.trim();
+  var email = document.getElementById("cdEmail").value.trim();
+  var val   = document.getElementById("cdValidade").value;
+  var pag   = document.getElementById("cdPagamento").value;
+  var fret  = document.getElementById("cdFrete").value;
+  var obs   = document.getElementById("cdObs").value.trim();
+  var t     = cdCalcTotals();
+  var prazoStr = document.getElementById("cdPrazoText").textContent;
+
+  /* Cores Comfort Door */
+  var COR_LARANJA = [234, 88, 12];   /* #EA580C */
+  var COR_CINZA   = [55, 65, 81];    /* #374151 */
+  var COR_BG      = [255, 247, 237]; /* #FFF7ED laranja muito claro */
+  var COR_ACCENT  = [251, 146, 60];  /* #FB923C laranja claro para linha acento */
+
+  var doc = new window.jspdf.jsPDF({orientation:"portrait", unit:"mm", format:"a4"});
+  var W = 210, M = 16, y = 0;
+
+  /* ── Header ── */
+  doc.setFillColor.apply(doc, COR_CINZA); doc.rect(0, 0, W, 42, "F");
+  doc.setFillColor.apply(doc, COR_LARANJA); doc.rect(0, 40, W, 2, "F");
+  try { doc.addImage("data:image/jpeg;base64," + LOGO_SUB, "JPEG", M, 4, 34, 34); } catch(e) {}
+  doc.setTextColor(255, 255, 255); doc.setFontSize(17); doc.setFont("helvetica", "bold");
+  doc.text("AS Representacoes Comerciais", 56, 16);
+  doc.setFontSize(9); doc.setFont("helvetica", "normal");
+  doc.setTextColor(COR_ACCENT[0], COR_ACCENT[1], COR_ACCENT[2]);
+  doc.text("Representante Autorizado Comfort Door", 56, 23);
+  doc.setTextColor(200, 210, 230);
+  doc.text("PRE-ORCAMENTO No " + CD_NUM_ORC, 56, 30);
+  doc.text("Data: " + new Date().toLocaleDateString("pt-BR"), 56, 36);
+  y = 52;
+
+  /* ── Bloco cliente ── */
+  var hCli = (cnpj || whats || email) ? 28 : 16;
+  doc.setFillColor.apply(doc, COR_BG); doc.rect(M, y-4, W-2*M, hCli, "F");
+  doc.setTextColor.apply(doc, COR_CINZA); doc.setFontSize(8); doc.setFont("helvetica", "bold");
+  doc.text("DADOS DO CLIENTE", M+2, y+1);
+  doc.setFontSize(10.5); doc.setTextColor(30, 30, 40);
+  doc.setFont("helvetica", "bold"); doc.text(nome, M+2, y+9); doc.setFont("helvetica", "normal");
+  if (cnpj) { doc.setFontSize(9); doc.text("CNPJ: " + cnpj, W-M, y+9, {align:"right"}); }
+  var cont = [whats, email].filter(Boolean).join("   |   ");
+  if (cont) { doc.setFontSize(9); doc.setTextColor(90, 100, 128); doc.text(cont, M+2, y+17); }
+  y += hCli + 8;
+
+  /* ── Cabeçalho da tabela ── */
+  doc.setFillColor.apply(doc, COR_CINZA); doc.rect(M, y, W-2*M, 8, "F");
+  doc.setTextColor(255, 255, 255); doc.setFontSize(7.5); doc.setFont("helvetica", "bold");
+  doc.text("SKU",       M+2,  y+5.5);
+  doc.text("Descricao", M+26, y+5.5);
+  doc.text("Qtd",  W-70, y+5.5, {align:"right"});
+  doc.text("Unit.", W-52, y+5.5, {align:"right"});
+  doc.text("IPI",   W-32, y+5.5, {align:"right"});
+  doc.text("Total", W-M-1, y+5.5, {align:"right"});
+  y += 8;
+
+  /* ── Linhas de produto ── */
+  doc.setFont("helvetica", "normal"); doc.setTextColor(30, 30, 40);
+  cdOrcItems.forEach(function(item, idx) {
+    if (y > 265) { doc.addPage(); y = 18; }
+    if (idx % 2 === 0) { doc.setFillColor.apply(doc, COR_BG); doc.rect(M, y, W-2*M, 8, "F"); }
+    doc.setFontSize(7.5);
+    doc.text(item.sku, M+2, y+5.5);
+    var nm = item.desc.length > 50 ? item.desc.slice(0,50) + "..." : item.desc;
+    doc.text(nm, M+26, y+5.5);
+    doc.text(String(item.qty), W-70, y+5.5, {align:"right"});
+    doc.text(fmt(item.val), W-52, y+5.5, {align:"right"});
+    var lineIpi   = item.val * item.qty * item.ipiPct / 100;
+    var lineTotal = item.val * item.qty + lineIpi;
+    doc.text(item.ipiStr, W-32, y+5.5, {align:"right"});
+    doc.text(fmt(lineTotal), W-M-1, y+5.5, {align:"right"});
+    y += 8;
+  });
+
+  /* ── Totais ── */
+  doc.setDrawColor.apply(doc, COR_LARANJA); doc.setLineWidth(0.6); doc.line(M, y, W-M, y); y += 5;
+  doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80);
+  doc.text("Subtotal s/IPI:", W-52, y, {align:"right"});
+  doc.text(fmt(t.sub), W-M-1, y, {align:"right"}); y += 5;
+  doc.setTextColor(180, 50, 10);
+  doc.text("Total IPI:", W-52, y, {align:"right"});
+  doc.text(fmt(t.ipi), W-M-1, y, {align:"right"}); y += 6;
+  doc.setFontSize(13); doc.setFont("helvetica", "bold");
+  doc.setTextColor.apply(doc, COR_CINZA);
+  doc.text("TOTAL c/IPI: " + fmt(t.total), W-M-1, y, {align:"right"}); y += 11;
+
+  /* ── Condicoes ── */
+  doc.setLineWidth(0.3); doc.setDrawColor(200, 210, 230); doc.line(M, y, W-M, y); y += 5;
+  doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(80, 90, 110);
+  doc.text("CONDICOES COMERCIAIS", M, y); y += 5;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(40, 50, 65);
+  doc.text("Validade: " + val + "   |   Pagamento: " + pag + "   |   Frete: " + fret, M, y); y += 6;
+  if (prazoStr) {
+    doc.setFontSize(8.5); doc.setTextColor(30, 64, 175);
+    doc.text("Prazo politica: " + prazoStr, M, y); y += 6;
+  }
+  if (obs) {
+    doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(80, 90, 110);
+    doc.text("OBSERVACOES:", M, y); y += 4;
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(40, 50, 65);
+    var lns = doc.splitTextToSize(obs, W-2*M);
+    doc.text(lns, M, y); y += lns.length * 5 + 4;
+  }
+
+  /* ── Aviso politica (pedido minimo) ── */
+  if (t.total < 800) {
+    var yW = Math.max(y + 4, 235);
+    doc.setFillColor(254, 243, 199); doc.rect(M, yW-2, W-2*M, 14, "F");
+    doc.setDrawColor(245, 158, 11); doc.setLineWidth(0.4); doc.rect(M, yW-2, W-2*M, 14, "S");
+    doc.setTextColor(146, 64, 14); doc.setFontSize(8); doc.setFont("helvetica", "bold");
+    doc.text("ATENCAO - POLITICA COMERCIAL:", M+3, yW+4);
+    doc.setFont("helvetica", "normal");
+    doc.text("Pedido minimo Comfort Door: R$ 800,00. Este orcamento esta abaixo do minimo exigido.", M+3, yW+10);
+    y = yW + 16;
+  }
+
+  /* ── Disclaimer ── */
+  var yD = Math.max(y + 6, 256);
+  doc.setFillColor(255, 245, 220); doc.rect(M, yD-2, W-2*M, 17, "F");
+  doc.setDrawColor.apply(doc, COR_LARANJA); doc.setLineWidth(0.4); doc.rect(M, yD-2, W-2*M, 17, "S");
+  doc.setTextColor(100, 70, 0); doc.setFontSize(8); doc.setFont("helvetica", "bold");
+  doc.text("AVISO IMPORTANTE", M+3, yD+4);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+  var av = "Este documento e apenas uma previa para consulta de precos.";
+  doc.text(doc.splitTextToSize(av, W-2*M-6), M+3, yD+10);
+
+  /* ── Rodape ── */
+  doc.setDrawColor.apply(doc, COR_LARANJA); doc.setLineWidth(0.5); doc.line(M, 283, W-M, 283);
+  doc.setFontSize(7.5); doc.setTextColor(120, 130, 150); doc.setFont("helvetica", "normal");
+  doc.text("AS Representacoes Comerciais - Representante Autorizado Comfort Door - contato@comfortdoor.com.br", W/2, 287, {align:"center"});
+
+  /* ── Salva historico ── */
+  var hid = "cdh" + Date.now();
+  var h = getCDHist();
+  h.push({id:hid, nome:nome, cnpj:cnpj, whats:whats, email:email,
+    numOrc:CD_NUM_ORC, data:new Date().toLocaleDateString("pt-BR"),
+    total:t.total, nitens:cdOrcItems.length,
+    items:JSON.parse(JSON.stringify(cdOrcItems))});
+  saveCDHist(h); renderCDHist();
+
+  doc.save("PreOrc_CD_" + CD_NUM_ORC + "_" + nome.replace(/\s+/g,"_").slice(0,20) + ".pdf");
+}
+
 </script>
+
+<!-- PRE-ORCAMENTO COMFORT DOOR -->
+<div id="page-ocd" class="page">
+  <div class="ol">
+    <div>
+      <!-- Cliente -->
+      <div class="card">
+        <div class="ctitle"><i class="fa fa-user"></i> Dados do Cliente</div>
+        <div class="fr">
+          <div class="fl"><label>Nome / Razao Social *</label><input type="text" id="cdNome" placeholder="Ex: Construcoes Beta Ltda"></div>
+          <div class="fl"><label>CNPJ</label><input type="text" id="cdCNPJ" placeholder="00.000.000/0001-00" maxlength="18"></div>
+        </div>
+        <div class="fr">
+          <div class="fl"><label>WhatsApp</label><input type="text" id="cdWhats" placeholder="(00) 00000-0000"></div>
+          <div class="fl"><label>E-mail</label><input type="text" id="cdEmail" placeholder="contato@empresa.com"></div>
+        </div>
+      </div>
+
+      <!-- Produtos -->
+      <div class="card">
+        <div class="ctitle"><i class="fa fa-box"></i> Produtos Comfort Door</div>
+        <div class="pswrap">
+          <i class="fa fa-search si"></i>
+          <input type="text" id="cdPSearch" placeholder="Buscar produto por SKU ou descricao..." autocomplete="off">
+          <div class="dd" id="cdPDrop"></div>
+        </div>
+        <div id="cdEmptyMsg" class="ei"><i class="fa fa-box" style="font-size:20px;display:block;margin-bottom:5px"></i>Nenhum produto adicionado</div>
+        <table class="it" id="cdITable" style="display:none">
+          <thead><tr>
+            <th style="width:38%">Produto</th>
+            <th style="width:10%;text-align:center">Qtd</th>
+            <th style="width:18%;text-align:right">Unit. s/IPI</th>
+            <th style="width:16%;text-align:right">IPI</th>
+            <th style="width:18%;text-align:right">Total c/IPI</th>
+            <th style="width:8%"></th>
+          </tr></thead>
+          <tbody id="cdIBody"></tbody>
+        </table>
+
+        <!-- Totais -->
+        <div id="cdTotaisWrap" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px">
+            <span>Subtotal produtos (s/IPI)</span>
+            <span id="cdSubtotalVal">R$ 0,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:#c2410c;margin-bottom:4px">
+            <span>Total IPI</span>
+            <span id="cdIpiTotal">R$ 0,00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:var(--navy);border-top:1px solid var(--border);padding-top:6px">
+            <span>TOTAL c/IPI</span>
+            <span id="cdTotalVal">R$ 0,00</span>
+          </div>
+        </div>
+
+        <!-- Avisos de política -->
+        <div id="cdAlertMinimo" class="alert-warn">
+          <i class="fa fa-exclamation-triangle"></i> <strong>Pedido abaixo do mínimo:</strong> O pedido mínimo da Comfort Door é R$ 800,00. Este pré-orçamento não atende essa condição.
+        </div>
+        <div id="cdAlertOk" class="alert-warn" style="background:#d1fae5;border-color:#6ee7b7;color:#065f46">
+          <i class="fa fa-check-circle"></i> Pedido atende o mínimo de R$ 800,00.
+        </div>
+      </div>
+
+      <!-- Condições comerciais -->
+      <div class="card">
+        <div class="ctitle"><i class="fa fa-file-alt"></i> Condicoes Comerciais</div>
+
+        <!-- Prazo pagamento auto -->
+        <div id="cdPrazoInfo" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1e40af;margin-bottom:12px;display:none">
+          <i class="fa fa-clock"></i> <strong>Prazo sugerido pela politica:</strong> <span id="cdPrazoText"></span>
+        </div>
+
+        <div class="fr three" style="margin-bottom:9px">
+          <div class="fl"><label>Validade</label>
+            <select id="cdValidade"><option>7 dias</option><option selected>15 dias</option><option>30 dias</option><option>45 dias</option></select>
+          </div>
+          <div class="fl"><label>Pagamento</label>
+            <select id="cdPagamento">
+              <option>A combinar</option>
+              <option>Boleto a vista</option>
+              <option>Boleto 28 dias</option>
+              <option>Boleto 28/35/42</option>
+              <option>Boleto 35/42/49</option>
+              <option>Boleto 42/49/56</option>
+              <option>Boleto 42/56/70</option>
+              <option>PIX</option>
+            </select>
+          </div>
+          <div class="fl"><label>Frete</label>
+            <select id="cdFrete">
+              <option>A combinar</option>
+              <option>CIF (fornecedor)</option>
+              <option>FOB (cliente)</option>
+            </select>
+          </div>
+        </div>
+        <div class="fl"><label>Observacoes</label>
+          <textarea id="cdObs" placeholder="Informacoes adicionais ao cliente..."></textarea>
+        </div>
+
+        <!-- Politica resumida -->
+        <div style="margin-top:12px;background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:11px;color:var(--text2)">
+          <strong style="color:var(--text);display:block;margin-bottom:4px"><i class="fa fa-info-circle"></i> Política Comercial Comfort Door (Jul/2026)</strong>
+          Pedido mínimo: <strong>R$ 800,00</strong> &nbsp;|&nbsp;
+          Pagamento: Boleto ou PIX (habilitação prévia) &nbsp;|&nbsp;
+          Não realizamos vendas a prazo para MEI, Pessoa Física ou CNAE diferente de construção civil.<br>
+          Boletos vencidos serão protestados após 5 dias corridos.
+        </div>
+      </div>
+
+      <button class="bp bgold" onclick="gerarPDFCD()"><i class="fa fa-download"></i> Gerar PDF do Pre-Orcamento Comfort Door</button>
+    </div>
+
+    <!-- Histórico -->
+    <div>
+      <div class="hcard">
+        <div class="ctitle"><i class="fa fa-history"></i> Historico Comfort Door <span class="badge" id="cdHCount">0</span></div>
+        <input type="text" id="cdHSearch" placeholder="Buscar cliente..." style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;outline:none;margin-bottom:9px">
+        <div class="hl" id="cdHList"><div style="text-align:center;padding:18px;color:var(--text2);font-size:12px">Sem historico ainda</div></div>
+      </div>
+      <div style="margin-top:11px">
+        <div class="norc" id="cdNumOrcLabel"></div>
+        <button class="bp bnavy" style="margin-top:7px" onclick="novoOrcCD()"><i class="fa fa-plus"></i> Novo Orcamento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
