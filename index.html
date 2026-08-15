@@ -147,6 +147,11 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
 .ha.del:hover{border-color:var(--red);color:var(--red)}
 .badge{display:inline-block;background:var(--gold);color:var(--navy);font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:5px}
 .norc{font-size:11px;color:var(--text2);text-align:right;margin-bottom:7px}
+.cd-seg{background:#fde8e8;color:#b91c1c}
+.cd-bat{background:#fef3c7;color:#92400e}
+.cd-trav{background:#e0f2fe;color:#0369a1}
+.cd-ved{background:#d1fae5;color:#065f46}
+.cd-util{background:#ede9fe;color:#5b21b6}
 </style>
 </head>
 <body>
@@ -159,7 +164,8 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
   </div>
   <div class="hdr-sp"></div>
   <nav class="tab-nav">
-    <button class="tbtn active" onclick="showPage('c',this)"><i class="fa fa-table"></i> Consulta de Precos</button>
+    <button class="tbtn active" onclick="showPage('c',this)"><i class="fa fa-table"></i> Consulta IMAB</button>
+    <button class="tbtn" onclick="showPage('cd',this)"><i class="fa fa-door-open"></i> Comfort Door</button>
     <button class="tbtn" onclick="showPage('o',this)"><i class="fa fa-file-invoice-dollar"></i> Pre-Orcamento</button>
   </nav>
 </header>
@@ -191,6 +197,37 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
   </div>
   <div id="mobileCards" class="mobile-cards" style="display:none"></div>
 </div>
+
+<!-- COMFORT DOOR -->
+<div id="page-cd" class="page">
+  <div class="sw">
+    <i class="fa fa-search" style="color:var(--text2)"></i>
+    <input type="text" id="cdInput" placeholder="Buscar por SKU, descricao ou linha...">
+    <button class="fbtn on"  id="cdAll"  onclick="setCDFilter('all')">Todos</button>
+    <button class="fbtn off" id="cdSeg"  onclick="setCDFilter('Segurança')">Segurança</button>
+    <button class="fbtn off" id="cdBat"  onclick="setCDFilter('Batedores')">Batedores</button>
+    <button class="fbtn off" id="cdTrav" onclick="setCDFilter('Trava Porta')">Trava Porta</button>
+    <button class="fbtn off" id="cdVed"  onclick="setCDFilter('Vedação')">Vedação</button>
+    <button class="fbtn off" id="cdUtil" onclick="setCDFilter('Utilidades')">Utilidades</button>
+    <span class="cbadge" id="cdBadge"></span>
+  </div>
+  <div class="tw">
+    <table class="ptable">
+      <thead><tr>
+        <th>SKU</th>
+        <th>Linha</th>
+        <th>Descricao</th>
+        <th style="text-align:right">Preco</th>
+        <th style="text-align:right">IPI</th>
+      </tr></thead>
+      <tbody id="cdBody"></tbody>
+    </table>
+    <div id="cdNoRes" class="nores" style="display:none">
+      <i class="fa fa-search" style="font-size:26px;display:block;margin-bottom:8px"></i>Nenhum produto encontrado
+    </div>
+  </div>
+</div>
+
 
 <!-- PRE-ORCAMENTO -->
 <div id="page-o" class="page">
@@ -14239,6 +14276,7 @@ function showPage(p, btn) {
   document.getElementById("page-" + p).classList.add("active");
   btn.classList.add("active");
   if (p === "o") renderHist();
+  if (p === "cd") renderCD();
 }
 
 /* ---------- ORC STATE ---------- */
@@ -14580,6 +14618,376 @@ function gerarPDF() {
 
   doc.save("PreOrc_" + NUM_ORC + "_" + nome.replace(/\s+/g,"_").slice(0,20) + ".pdf");
 }
+
+
+/* ========== COMFORT DOOR ========== */
+var PRODUTOS_CD = [
+  {sku:"MR09010001",desc:"Fecho de Porta Trifor Preto",val:23.1,ipi:"3,25%",linha:"Segurança",sub:"Fecho de Porta"},
+  {sku:"MR09010002",desc:"Fecho de Porta Trifor Escovado",val:23.1,ipi:"3,25%",linha:"Segurança",sub:"Fecho de Porta"},
+  {sku:"MR09010003",desc:"Fecho de Porta Trifor Cromado",val:23.1,ipi:"3,25%",linha:"Segurança",sub:"Fecho de Porta"},
+  {sku:"MR10010001",desc:"Trava de Segurança Easy Lock - Escovado",val:42.81,ipi:"3,25%",linha:"Segurança",sub:"Trava Easy Lock"},
+  {sku:"MR10010002",desc:"Trava de Segurança Easy Lock - Cromado",val:42.81,ipi:"3,25%",linha:"Segurança",sub:"Trava Easy Lock"},
+  {sku:"MR10010003",desc:"Trava de Segurança Easy Lock - Preto",val:42.81,ipi:"3,25%",linha:"Segurança",sub:"Trava Easy Lock"},
+  {sku:"MR10010004",desc:"Trava de Segurança Easy Lock - Níquel",val:42.81,ipi:"3,25%",linha:"Segurança",sub:"Trava Easy Lock"},
+  {sku:"MR10010005",desc:"Trava de Segurança Easy Lock - Branco",val:42.81,ipi:"3,25%",linha:"Segurança",sub:"Trava Easy Lock"},
+  {sku:"MR10020001",desc:"Trava de Segurança Easy Flip - Escovado",val:41.47,ipi:"3,25%",linha:"Segurança",sub:"Trava Easy Flip"},
+  {sku:"MR10020002",desc:"Trava de Segurança Easy Flip - Preto",val:41.47,ipi:"3,25%",linha:"Segurança",sub:"Trava Easy Flip"},
+  {sku:"MR11010005",desc:"Batedor de Porta Basic Piso Médio - Cromado",val:21.22,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"MR11010004",desc:"Batedor de Porta Basic Piso Médio - Escovado",val:21.22,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"MR11010006",desc:"Batedor de Porta Basic Piso Médio - Preto",val:21.22,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"MR11010002",desc:"Batedor de Porta Basic Piso Pequeno - Cromado",val:20.19,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"MR11010001",desc:"Batedor de Porta Basic Piso Pequeno - Escovado",val:20.19,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"MR11010003",desc:"Batedor de Porta Basic Piso Pequeno - Preto",val:20.19,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"MR11010007",desc:"Batedor de Porta Basic Rodapé - Escovado",val:13.31,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"MR11010008",desc:"Batedor de Porta Basic Rodapé - Preto",val:13.31,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"MR11020002",desc:"Batedor de Porta Meia Lua - Escovado",val:8.38,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"MR11020001",desc:"Batedor de Porta Meia Lua - Preto",val:8.38,ipi:"3,25%",linha:"Batedores",sub:"Batedor de Porta"},
+  {sku:"PA01010001",desc:"Trava Porta Magnético - Branco",val:19.28,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01010002",desc:"Trava Porta Magnético - Chumbo",val:19.28,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01010003",desc:"Trava Porta Magnético - Cromado",val:19.86,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01010004",desc:"Trava Porta Magnético - Dourado Brilho",val:19.86,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01010011",desc:"Trava Porta Magnético - Dourado Fosco",val:19.86,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01010005",desc:"Trava Porta Magnético - Marrom Claro",val:19.28,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01010006",desc:"Trava Porta Magnético - Marrom Escuro",val:19.28,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01010007",desc:"Trava Porta Magnético - Prata",val:19.86,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01010008",desc:"Trava Porta Magnético - Preto Brilho",val:19.86,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01010009",desc:"Trava Porta Magnético - Preto Fosco",val:19.28,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01090002",desc:"Trava Porta Magnético Slim - Escovado",val:14.78,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01090001",desc:"Trava Porta Magnético Slim - Preto",val:14.78,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01060001",desc:"Trava Porta Magnético Premium - Escovado",val:17.01,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01060002",desc:"Trava Porta Magnético Premium - Branco",val:17.7,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01060003",desc:"Trava Porta Magnético Premium - Preto",val:17.7,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01060004",desc:"Trava Porta Magnético Premium - Marrom",val:17.7,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01060005",desc:"Trava Porta Magnético Premium - Marrom Claro",val:17.7,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01050001",desc:"Trava Porta Magnético Standard Escovado",val:13.52,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01070001",desc:"Trava Porta Magnético Dual Escovado",val:17.84,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01070002",desc:"Trava Porta Magnético Dual Preto",val:18.55,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01020001",desc:"Trava Porta Cunha - Branco",val:7.97,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01020002",desc:"Trava Porta Cunha - Cinza Claro",val:7.97,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01020003",desc:"Trava Porta Cunha - Laranja",val:7.97,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01020004",desc:"Trava Porta Cunha - Marrom",val:7.97,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01020005",desc:"Trava Porta Cunha - Marrom Claro",val:7.97,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01020006",desc:"Trava Porta Cunha - Preto",val:7.97,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01080001",desc:"Trava Porta Pressão Piso",val:9.72,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"MR01080002",desc:"Trava Porta Pressão Rodapé",val:9.72,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01040001",desc:"Trava Porta Protetor E.V.A. - Branco",val:7.81,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA01040002",desc:"Trava Porta Protetor E.V.A. - Preto",val:7.81,ipi:"3,25%",linha:"Trava Porta",sub:"Trava Porta"},
+  {sku:"PA02050030",desc:"Veda Frestas Encaixe Lateral - Branco - 500M",val:1457.18,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050040",desc:"Veda Frestas Encaixe Lateral - Marrom Claro - 500M",val:1457.18,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050038",desc:"Veda Frestas Encaixe Lateral - Marrom - 500M",val:1457.18,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050034",desc:"Veda Frestas Encaixe Lateral - Cinza - 500M",val:1457.18,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050036",desc:"Veda Frestas Encaixe Lateral - Cinza Claro - 500M",val:1457.18,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050032",desc:"Veda Frestas Encaixe Lateral - Chumbo - 500M",val:1457.18,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050042",desc:"Veda Frestas Encaixe Lateral - Preto - 500M",val:1457.18,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050029",desc:"Veda Frestas Encaixe Lateral - Branco - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050039",desc:"Veda Frestas Encaixe Lateral - Marrom Claro - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050037",desc:"Veda Frestas Encaixe Lateral - Marrom - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050033",desc:"Veda Frestas Encaixe Lateral - Cinza - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050035",desc:"Veda Frestas Encaixe Lateral - Cinza Claro - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050031",desc:"Veda Frestas Encaixe Lateral - Chumbo - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050041",desc:"Veda Frestas Encaixe Lateral - Preto - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050001",desc:"Veda Frestas Encaixe Central - Branco - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050011",desc:"Veda Frestas Encaixe Central - Marrom Claro - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050009",desc:"Veda Frestas Encaixe Central - Marrom - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050007",desc:"Veda Frestas Encaixe Central - Cinza Claro - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050005",desc:"Veda Frestas Encaixe Central - Cinza - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050003",desc:"Veda Frestas Encaixe Central - Chumbo - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050013",desc:"Veda Frestas Encaixe Central - Preto - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050002",desc:"Veda Frestas Encaixe Central - Branco - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050012",desc:"Veda Frestas Encaixe Central - Marrom Claro - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050010",desc:"Veda Frestas Encaixe Central - Marrom - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050008",desc:"Veda Frestas Encaixe Central - Cinza Claro - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050006",desc:"Veda Frestas Encaixe Central - Cinza - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050004",desc:"Veda Frestas Encaixe Central - Chumbo - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050014",desc:"Veda Frestas Encaixe Central - Preto - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050015",desc:"Veda Frestas Encaixe Deslocado - Branco - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050025",desc:"Veda Frestas Encaixe Deslocado - Marrom Claro - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050023",desc:"Veda Frestas Encaixe Deslocado - Marrom - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050021",desc:"Veda Frestas Encaixe Deslocado - Cinza Claro - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050019",desc:"Veda Frestas Encaixe Deslocado - Cinza - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050017",desc:"Veda Frestas Encaixe Deslocado - Chumbo - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050027",desc:"Veda Frestas Encaixe Deslocado - Preto - 250M",val:728.77,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050016",desc:"Veda Frestas Encaixe Deslocado - Branco - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050026",desc:"Veda Frestas Encaixe Deslocado - Marrom Claro - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050024",desc:"Veda Frestas Encaixe Deslocado - Marrom - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050022",desc:"Veda Frestas Encaixe Deslocado - Cinza Claro - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050020",desc:"Veda Frestas Encaixe Deslocado - Cinza - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050018",desc:"Veda Frestas Encaixe Deslocado - Chumbo - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02050028",desc:"Veda Frestas Encaixe Deslocado - Preto - 50M",val:178.22,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010023",desc:"Veda Frestas Escova Encaixe 5x5mm Cinza 600M",val:223.38,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010024",desc:"Veda Frestas Escova Encaixe 5x6mm Cinza 500M",val:200.81,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010025",desc:"Veda Frestas Escova Encaixe 5x7mm Cinza 400M",val:173.34,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010026",desc:"Veda Frestas Escova Encaixe 5x8mm Cinza 350M",val:261.96,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010027",desc:"Veda Frestas Escova Encaixe 5x10mm Cinza 300M",val:166.04,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010028",desc:"Veda Frestas Escova Encaixe 7x5mm Cinza 450M",val:172.38,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010029",desc:"Veda Frestas Escova Encaixe 7x6mm Cinza 400M",val:165.58,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010030",desc:"Veda Frestas Escova Encaixe 7x7mm Cinza 350M",val:156.08,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010031",desc:"Veda Frestas Escova Encaixe 7x8mm Cinza 300M",val:148.53,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010032",desc:"Veda Frestas Escova Encaixe 7x10mm Cinza 250M",val:154.39,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010015",desc:"Veda Frestas Escova Adesivo 5x7mm Cinza 350M",val:684.56,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010020",desc:"Veda Frestas Escova Adesivo 5x7mm Preto 350M",val:684.56,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010012",desc:"Veda Frestas Escova Adesivo 5x7mm Branco 350M",val:684.56,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010016",desc:"Veda Frestas Escova Adesivo 5x7mm Cinza 400M",val:782.34,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010021",desc:"Veda Frestas Escova Adesivo 5x7mm Preto 400M",val:782.34,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010013",desc:"Veda Frestas Escova Adesivo 5x7mm Branco 400M",val:782.34,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010018",desc:"Veda Frestas Escova Adesivo 5x7mm Marrom 400M",val:782.34,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010004",desc:"Veda Frestas Escova Adesivo 10x7mm Cinza 225M",val:521.31,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010009",desc:"Veda Frestas Escova Adesivo 10x7mm Preto 225M",val:521.31,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010001",desc:"Veda Frestas Escova Adesivo 10x7mm Branco 225M",val:521.31,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010005",desc:"Veda Frestas Escova Adesivo 10x7mm Cinza 250M",val:579.24,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010010",desc:"Veda Frestas Escova Adesivo 10x7mm Preto 250M",val:579.24,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010002",desc:"Veda Frestas Escova Adesivo 10x7mm Branco 250M",val:579.24,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010007",desc:"Veda Frestas Escova Adesivo 10x7mm Marrom 250M",val:579.24,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010017",desc:"Veda Frestas Escova Adesivo 5x7mm Cinza 5M",val:17.63,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010022",desc:"Veda Frestas Escova Adesivo 5x7mm Preto 5M",val:17.63,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010014",desc:"Veda Frestas Escova Adesivo 5x7mm Branco 5M",val:17.63,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010019",desc:"Veda Frestas Escova Adesivo 5x7mm Marrom 5M",val:17.63,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010006",desc:"Veda Frestas Escova Adesivo 10x7mm Cinza 5M",val:19.76,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010011",desc:"Veda Frestas Escova Adesivo 10x7mm Preto 5M",val:19.76,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010003",desc:"Veda Frestas Escova Adesivo 10x7mm Branco 5M",val:19.76,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02010008",desc:"Veda Frestas Escova Adesivo 10x7mm Marrom 5M",val:19.76,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030001",desc:"Veda Frestas Adesivo Plus Branco 100M",val:349.81,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030009",desc:"Veda Frestas Adesivo Plus Preto 100M",val:349.81,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030005",desc:"Veda Frestas Adesivo Plus Marrom 100M",val:349.81,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030007",desc:"Veda Frestas Adesivo Plus Marrom Claro 100M",val:349.81,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030003",desc:"Veda Frestas Adesivo Plus Cinza Claro 100M",val:349.81,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030002",desc:"Veda Frestas Adesivo Plus Branco 6M",val:23.61,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030010",desc:"Veda Frestas Adesivo Plus Preto 6M",val:23.61,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030006",desc:"Veda Frestas Adesivo Plus Marrom 6M",val:23.61,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030008",desc:"Veda Frestas Adesivo Plus Marrom Claro 6M",val:23.61,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02030004",desc:"Veda Frestas Adesivo Plus Cinza Claro 6M",val:23.61,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020001",desc:"Veda Frestas EPDM 2mm Branco 6M",val:14.96,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020003",desc:"Veda Frestas EPDM 2mm Marrom Claro 6M",val:14.96,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020002",desc:"Veda Frestas EPDM 2mm Marrom 6M",val:14.96,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020004",desc:"Veda Frestas EPDM 2mm Preto 6M",val:14.96,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020005",desc:"Veda Frestas EPDM 4mm Branco 6M",val:15.44,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020007",desc:"Veda Frestas EPDM 4mm Marrom Claro 6M",val:15.44,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020006",desc:"Veda Frestas EPDM 4mm Marrom 6M",val:15.44,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020008",desc:"Veda Frestas EPDM 4mm Preto 6M",val:15.44,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020009",desc:"Veda Frestas EPDM 6mm Branco 6M",val:15.92,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020011",desc:"Veda Frestas EPDM 6mm Marrom Claro 6M",val:15.92,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020010",desc:"Veda Frestas EPDM 6mm Marrom 6M",val:15.92,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020012",desc:"Veda Frestas EPDM 6mm Preto 6M",val:15.92,ipi:"6,50%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"MR02020013",desc:"Veda Frestas Adesivo Transparente 7x9mm 6M",val:20.31,ipi:"0,00%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02040001",desc:"Veda Fresta Multiuso 2mm Preto 10M",val:7.46,ipi:"9,75%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02040002",desc:"Veda Fresta Multiuso 4mm Preto 10M",val:9.34,ipi:"9,75%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02040003",desc:"Veda Fresta Multiuso 6mm Preto 10M",val:12.03,ipi:"9,75%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02060004",desc:"Veda Fresta Fita Adesiva Transparente 5M",val:17.86,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02060003",desc:"Veda Fresta Fita Adesiva Preto 5M",val:17.86,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA02060001",desc:"Veda Fresta Fita Adesiva Branco 5M",val:17.86,ipi:"3,25%",linha:"Vedação",sub:"Veda Frestas"},
+  {sku:"PA03010004",desc:"Veda Porta Adesivo Escova Branco 80cm",val:18.75,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010035",desc:"Veda Porta Adesivo Escova Preto 80cm",val:18.75,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010009",desc:"Veda Porta Adesivo Escova Cinza Claro 80cm",val:18.75,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010025",desc:"Veda Porta Adesivo Escova Marrom 80cm",val:18.75,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010030",desc:"Veda Porta Adesivo Escova Marrom Claro 80cm",val:18.75,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010014",desc:"Veda Porta Adesivo Escova Madeira Clara 80cm",val:18.75,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010019",desc:"Veda Porta Adesivo Escova Madeira Escura 80cm",val:18.75,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010005",desc:"Veda Porta Adesivo Escova Branco 90cm",val:21.1,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010036",desc:"Veda Porta Adesivo Escova Preto 90cm",val:21.1,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010010",desc:"Veda Porta Adesivo Escova Cinza Claro 90cm",val:21.1,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010026",desc:"Veda Porta Adesivo Escova Marrom 90cm",val:21.1,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010031",desc:"Veda Porta Adesivo Escova Marrom Claro 90cm",val:21.1,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010015",desc:"Veda Porta Adesivo Escova Madeira Clara 90cm",val:21.1,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010020",desc:"Veda Porta Adesivo Escova Madeira Escura 90cm",val:21.1,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010001",desc:"Veda Porta Adesivo Escova Branco 100cm",val:23.44,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010032",desc:"Veda Porta Adesivo Escova Preto 100cm",val:23.44,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010006",desc:"Veda Porta Adesivo Escova Cinza Claro 100cm",val:23.44,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010022",desc:"Veda Porta Adesivo Escova Marrom 100cm",val:23.44,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010027",desc:"Veda Porta Adesivo Escova Marrom Claro 100cm",val:23.44,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010011",desc:"Veda Porta Adesivo Escova Madeira Clara 100cm",val:23.44,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010016",desc:"Veda Porta Adesivo Escova Madeira Escura 100cm",val:23.44,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010002",desc:"Veda Porta Adesivo Escova Branco 130cm",val:30.47,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010033",desc:"Veda Porta Adesivo Escova Preto 130cm",val:30.47,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010007",desc:"Veda Porta Adesivo Escova Cinza Claro 130cm",val:30.47,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010023",desc:"Veda Porta Adesivo Escova Marrom 130cm",val:30.47,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010028",desc:"Veda Porta Adesivo Escova Marrom Claro 130cm",val:30.47,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010012",desc:"Veda Porta Adesivo Escova Madeira Clara 130cm",val:30.47,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010017",desc:"Veda Porta Adesivo Escova Madeira Escura 130cm",val:30.47,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010003",desc:"Veda Porta Adesivo Escova Branco 150cm",val:35.16,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010034",desc:"Veda Porta Adesivo Escova Preto 150cm",val:35.16,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010008",desc:"Veda Porta Adesivo Escova Cinza Claro 150cm",val:35.16,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010024",desc:"Veda Porta Adesivo Escova Marrom 150cm",val:35.16,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010029",desc:"Veda Porta Adesivo Escova Marrom Claro 150cm",val:35.16,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010013",desc:"Veda Porta Adesivo Escova Madeira Clara 150cm",val:35.16,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03010018",desc:"Veda Porta Adesivo Escova Madeira Escura 150cm",val:35.16,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020004",desc:"Veda Porta Adesivo Rodinho Branco 80cm",val:17.49,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020023",desc:"Veda Porta Adesivo Rodinho Preto 80cm",val:17.49,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020018",desc:"Veda Porta Adesivo Rodinho Marrom Claro 80cm",val:17.49,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020013",desc:"Veda Porta Adesivo Rodinho Marrom 80cm",val:17.49,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020028",desc:"Veda Porta Adesivo Rodinho Transparente 80cm",val:17.49,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020006",desc:"Veda Porta Adesivo Rodinho Branco 90cm",val:19.68,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020024",desc:"Veda Porta Adesivo Rodinho Preto 90cm",val:19.68,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020019",desc:"Veda Porta Adesivo Rodinho Marrom Claro 90cm",val:19.68,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020014",desc:"Veda Porta Adesivo Rodinho Marrom 90cm",val:19.68,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020029",desc:"Veda Porta Adesivo Rodinho Transparente 90cm",val:19.68,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020001",desc:"Veda Porta Adesivo Rodinho Branco 100cm",val:21.86,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020020",desc:"Veda Porta Adesivo Rodinho Preto 100cm",val:21.86,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020015",desc:"Veda Porta Adesivo Rodinho Marrom Claro 100cm",val:21.86,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020010",desc:"Veda Porta Adesivo Rodinho Marrom 100cm",val:21.86,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020025",desc:"Veda Porta Adesivo Rodinho Transparente 100cm",val:21.86,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020002",desc:"Veda Porta Adesivo Rodinho Branco 130cm",val:28.42,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020021",desc:"Veda Porta Adesivo Rodinho Preto 130cm",val:28.42,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020016",desc:"Veda Porta Adesivo Rodinho Marrom Claro 130cm",val:28.42,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020011",desc:"Veda Porta Adesivo Rodinho Marrom 130cm",val:28.42,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020026",desc:"Veda Porta Adesivo Rodinho Transparente 130cm",val:28.42,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020003",desc:"Veda Porta Adesivo Rodinho Branco 150cm",val:32.79,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020022",desc:"Veda Porta Adesivo Rodinho Preto 150cm",val:32.79,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020017",desc:"Veda Porta Adesivo Rodinho Marrom Claro 150cm",val:32.79,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020012",desc:"Veda Porta Adesivo Rodinho Marrom 150cm",val:32.79,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03020027",desc:"Veda Porta Adesivo Rodinho Transparente 150cm",val:32.79,ipi:"3,25%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030026",desc:"Veda Porta Rolinho Preto 70cm",val:7.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030018",desc:"Veda Porta Rolinho Marrom 70cm",val:7.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030022",desc:"Veda Porta Rolinho Marrom Claro 70cm",val:7.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030014",desc:"Veda Porta Rolinho Cinza 70cm",val:7.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030010",desc:"Veda Porta Rolinho Chumbo 70cm",val:7.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030006",desc:"Veda Porta Rolinho Branco 70cm",val:7.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030030",desc:"Veda Porta Rolinho Rosa Claro 70cm",val:7.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030002",desc:"Veda Porta Rolinho Azul Claro 70cm",val:7.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030034",desc:"Veda Porta Rolinho Verde Claro 70cm",val:7.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030027",desc:"Veda Porta Rolinho Preto 80cm",val:8.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030019",desc:"Veda Porta Rolinho Marrom 80cm",val:8.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030023",desc:"Veda Porta Rolinho Marrom Claro 80cm",val:8.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030015",desc:"Veda Porta Rolinho Cinza 80cm",val:8.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030011",desc:"Veda Porta Rolinho Chumbo 80cm",val:8.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030007",desc:"Veda Porta Rolinho Branco 80cm",val:8.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030028",desc:"Veda Porta Rolinho Preto 90cm",val:9.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030020",desc:"Veda Porta Rolinho Marrom 90cm",val:9.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030024",desc:"Veda Porta Rolinho Marrom Claro 90cm",val:9.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030016",desc:"Veda Porta Rolinho Cinza 90cm",val:9.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030012",desc:"Veda Porta Rolinho Chumbo 90cm",val:9.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030008",desc:"Veda Porta Rolinho Branco 90cm",val:9.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030025",desc:"Veda Porta Rolinho Preto 100cm",val:10.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030017",desc:"Veda Porta Rolinho Marrom 100cm",val:10.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030021",desc:"Veda Porta Rolinho Marrom Claro 100cm",val:10.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030013",desc:"Veda Porta Rolinho Cinza 100cm",val:10.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030009",desc:"Veda Porta Rolinho Chumbo 100cm",val:10.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03030005",desc:"Veda Porta Rolinho Branco 100cm",val:10.95,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040002",desc:"Veda Porta Automático Embutido 62cm",val:111.16,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040003",desc:"Veda Porta Automático Embutido 72cm",val:113.98,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040004",desc:"Veda Porta Automático Embutido 82cm",val:118.8,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040005",desc:"Veda Porta Automático Embutido 92cm",val:120.29,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040006",desc:"Veda Porta Automático Embutido 102cm",val:126.14,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040007",desc:"Veda Porta Automático Embutido 112cm",val:137.77,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040008",desc:"Veda Porta Automático Embutido 122cm",val:149.83,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040009",desc:"Veda Porta Automático Embutido 132cm",val:157.69,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040010",desc:"Veda Porta Automático Embutido 142cm",val:166.63,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03040011",desc:"Veda Porta Automático Embutido 152cm",val:175.54,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050002",desc:"Veda Porta Automático Slim 62cm",val:97.64,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050003",desc:"Veda Porta Automático Slim 72cm",val:100.66,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050004",desc:"Veda Porta Automático Slim 82cm",val:103.67,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050005",desc:"Veda Porta Automático Slim 92cm",val:107.05,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050006",desc:"Veda Porta Automático Slim 102cm",val:111.04,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050007",desc:"Veda Porta Automático Slim 112cm",val:118.53,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050008",desc:"Veda Porta Automático Slim 122cm",val:132.58,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050009",desc:"Veda Porta Automático Slim 132cm",val:138.57,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050010",desc:"Veda Porta Automático Slim 142cm",val:141.83,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03050011",desc:"Veda Porta Automático Slim 152cm",val:151.55,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060002",desc:"Veda Porta Automático Externo Alumínio 62cm",val:129.39,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060003",desc:"Veda Porta Automático Externo Alumínio 72cm",val:135.63,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060004",desc:"Veda Porta Automático Externo Alumínio 82cm",val:145.87,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060005",desc:"Veda Porta Automático Externo Alumínio 92cm",val:147.82,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060006",desc:"Veda Porta Automático Externo Alumínio 102cm",val:161.79,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060007",desc:"Veda Porta Automático Externo Alumínio 112cm",val:172.26,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060008",desc:"Veda Porta Automático Externo Alumínio 122cm",val:213.72,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060009",desc:"Veda Porta Automático Externo Alumínio 132cm",val:215.86,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060010",desc:"Veda Porta Automático Externo Alumínio 142cm",val:217.8,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03060011",desc:"Veda Porta Automático Externo Alumínio 152cm",val:222.35,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070001",desc:"Veda Porta Automático Externo Branco 62cm",val:155.27,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070002",desc:"Veda Porta Automático Externo Branco 72cm",val:162.76,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070003",desc:"Veda Porta Automático Externo Branco 82cm",val:175.04,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070004",desc:"Veda Porta Automático Externo Branco 92cm",val:177.38,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070005",desc:"Veda Porta Automático Externo Branco 102cm",val:194.15,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070006",desc:"Veda Porta Automático Externo Branco 112cm",val:206.7,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070007",desc:"Veda Porta Automático Externo Branco 122cm",val:256.46,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070008",desc:"Veda Porta Automático Externo Branco 132cm",val:259.03,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070009",desc:"Veda Porta Automático Externo Branco 142cm",val:261.36,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA03070010",desc:"Veda Porta Automático Externo Branco 152cm",val:266.82,ipi:"0,00%",linha:"Vedação",sub:"Veda Portas"},
+  {sku:"PA12010001",desc:"Protetor Salva Porta Branco 60cm",val:18.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010002",desc:"Protetor Salva Porta Branco 70cm",val:20.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010003",desc:"Protetor Salva Porta Branco 80cm",val:22.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010004",desc:"Protetor Salva Porta Branco 90cm",val:24.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010005",desc:"Protetor Salva Porta Branco 100cm",val:26.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010006",desc:"Protetor Salva Porta Marrom 60cm",val:18.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010007",desc:"Protetor Salva Porta Marrom 70cm",val:20.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010008",desc:"Protetor Salva Porta Marrom 80cm",val:22.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010009",desc:"Protetor Salva Porta Marrom 90cm",val:24.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010010",desc:"Protetor Salva Porta Marrom 100cm",val:26.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010016",desc:"Protetor Salva Porta Preto 60cm",val:18.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010017",desc:"Protetor Salva Porta Preto 70cm",val:20.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010018",desc:"Protetor Salva Porta Preto 80cm",val:22.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010019",desc:"Protetor Salva Porta Preto 90cm",val:24.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA12010020",desc:"Protetor Salva Porta Preto 100cm",val:26.9,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Salva Porta"},
+  {sku:"PA06010004",desc:"Gancho de Metal Redondo Inox",val:11.6,ipi:"6,50%",linha:"Utilidades",sub:"Gancho de Metal"},
+  {sku:"PA06010003",desc:"Gancho de Metal Quadrado Inox",val:11.6,ipi:"6,50%",linha:"Utilidades",sub:"Gancho de Metal"},
+  {sku:"PA06010006",desc:"Gancho de Metal Redondo Preto",val:11.6,ipi:"6,50%",linha:"Utilidades",sub:"Gancho de Metal"},
+  {sku:"PA06010005",desc:"Gancho de Metal Quadrado Preto",val:11.6,ipi:"6,50%",linha:"Utilidades",sub:"Gancho de Metal"},
+  {sku:"PA06010002",desc:"Gancho de Metal Redondo Branco",val:11.6,ipi:"6,50%",linha:"Utilidades",sub:"Gancho de Metal"},
+  {sku:"PA06010001",desc:"Gancho de Metal Quadrado Branco",val:11.6,ipi:"6,50%",linha:"Utilidades",sub:"Gancho de Metal"},
+  {sku:"PA08010005",desc:"Protetor Anti Impacto Branco",val:6.94,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Anti Impacto"},
+  {sku:"PA08010003",desc:"Protetor Anti Impacto Preto",val:6.94,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Anti Impacto"},
+  {sku:"PA08010002",desc:"Protetor Anti Impacto Marrom",val:6.94,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Anti Impacto"},
+  {sku:"PA08010007",desc:"Protetor Anti Impacto Marrom Claro",val:6.94,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Anti Impacto"},
+  {sku:"PA08010004",desc:"Protetor Anti Impacto Rosa",val:6.94,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Anti Impacto"},
+  {sku:"PA08010008",desc:"Protetor Anti Impacto Verde",val:6.94,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Anti Impacto"},
+  {sku:"PA08010001",desc:"Protetor Anti Impacto Azul",val:6.94,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Anti Impacto"},
+];
+
+var cdFilter = "all", cdQ = "", cdVis = 200;
+
+var cdTagClass = {
+  "Segurança":"cd-seg","Batedores":"cd-bat",
+  "Trava Porta":"cd-trav","Vedação":"cd-ved","Utilidades":"cd-util"
+};
+var cdFilterMap = {
+  "cdAll":"all","cdSeg":"Segurança","cdBat":"Batedores",
+  "cdTrav":"Trava Porta","cdVed":"Vedação","cdUtil":"Utilidades"
+};
+
+function renderCD() {
+  var q = cdQ.toLowerCase();
+  var terms = q.split(/\s+/).filter(function(t){ return t.length > 0; });
+  var fil = PRODUTOS_CD.filter(function(p){
+    var mLinha = cdFilter === "all" || p.linha === cdFilter;
+    var hay = p.desc.toLowerCase() + " " + p.sku.toLowerCase() + " " + p.linha.toLowerCase() + " " + p.sub.toLowerCase();
+    var mQ = !q || terms.every(function(t){ return hay.indexOf(t) >= 0; });
+    return mLinha && mQ;
+  });
+  document.getElementById("cdBadge").textContent = fil.length.toLocaleString("pt-BR") + " produto" + (fil.length !== 1 ? "s" : "");
+  document.getElementById("cdNoRes").style.display = fil.length ? "none" : "block";
+  var rows = fil.slice(0, cdVis).map(function(p){
+    var cls = cdTagClass[p.linha] || "";
+    return "<tr>" +
+      "<td style='font-family:monospace;font-size:11px'>" + p.sku + "</td>" +
+      "<td><span class='tag " + cls + "'>" + p.sub + "</span></td>" +
+      "<td>" + p.desc + "</td>" +
+      "<td style='text-align:right;font-weight:600;color:var(--green)'>" + fmt(p.val) + "</td>" +
+      "<td style='text-align:right;color:var(--text2);font-size:12px'>" + p.ipi + "</td>" +
+    "</tr>";
+  }).join("");
+  if (fil.length > cdVis) {
+    rows += "<tr><td colspan='5' style='text-align:center;padding:11px'>" +
+      "<button onclick='cdLoadMore()' style='border:1px solid #dde3ec;background:#f8fafc;border-radius:8px;padding:7px 18px;cursor:pointer;font-size:13px'>" +
+      "Carregar mais (" + cdVis + " de " + fil.length + ")" +
+      "</button></td></tr>";
+  }
+  document.getElementById("cdBody").innerHTML = rows;
+}
+
+function cdLoadMore(){ cdVis += 200; renderCD(); }
+
+function setCDFilter(f) {
+  cdFilter = f; cdVis = 200;
+  Object.keys(cdFilterMap).forEach(function(id){
+    document.getElementById(id).className = "fbtn " + (cdFilterMap[id] === f ? "on" : "off");
+  });
+  renderCD();
+}
+
+document.getElementById("cdInput").addEventListener("input", function(){
+  cdQ = this.value; cdVis = 200; renderCD();
+});
+
+renderCD();
 
 </script>
 </body>
