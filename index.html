@@ -225,6 +225,8 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
         <th>Descricao</th>
         <th style="text-align:right">Preco</th>
         <th style="text-align:right">IPI</th>
+        <th style="text-align:right">Lote Pad.</th>
+        <th style="text-align:right">Cx. Master</th>
       </tr></thead>
       <tbody id="cdBody"></tbody>
     </table>
@@ -14533,9 +14535,11 @@ function gerarPDF() {
   /* Header */
   doc.setFillColor(15,34,68); doc.rect(0,0,W,42,"F");
   doc.setFillColor(201,168,76); doc.rect(0,40,W,2,"F");
-  try { doc.addImage("data:image/jpeg;base64," + LOGO_SUB, "JPEG", M, 4, 34, 34); } catch(e) {}
+  /* Caixa branca para o logo */
+  doc.setFillColor(255,255,255); doc.rect(M-2, 3, 38, 36, "F");
+  try { doc.addImage("data:image/jpeg;base64," + LOGO_SUB, "JPEG", M, 5, 34, 32); } catch(e) {}
   doc.setTextColor(255,255,255); doc.setFontSize(17); doc.setFont("helvetica","bold");
-  doc.text("AS Representacoes Comerciais", 56, 16);
+  doc.text("AS Representacoes Comerciais", 58, 16);
   doc.setFontSize(9); doc.setFont("helvetica","normal");
   doc.setTextColor(201,168,76); doc.text("Representante Autorizado IMAB", 56, 23);
   doc.setTextColor(200,210,230);
@@ -14939,6 +14943,317 @@ var PRODUTOS_CD = [
   {sku:"PA08010001",desc:"Protetor Anti Impacto Azul",val:6.94,ipi:"3,25%",linha:"Utilidades",sub:"Protetor Anti Impacto"},
 ];
 
+var CD_LOTES = {
+  "MR09010001": {lp:5, cm:25},
+  "MR09010002": {lp:5, cm:25},
+  "MR09010003": {lp:5, cm:25},
+  "MR10010001": {lp:5, cm:30},
+  "MR10010002": {lp:5, cm:30},
+  "MR10010003": {lp:5, cm:30},
+  "MR10010004": {lp:5, cm:30},
+  "MR10010005": {lp:5, cm:30},
+  "MR10020001": {lp:5, cm:25},
+  "MR10020002": {lp:5, cm:25},
+  "MR11010005": {lp:10, cm:25},
+  "MR11010004": {lp:10, cm:25},
+  "MR11010006": {lp:10, cm:25},
+  "MR11010002": {lp:10, cm:25},
+  "MR11010001": {lp:10, cm:25},
+  "MR11010003": {lp:10, cm:25},
+  "MR11010007": {lp:10, cm:25},
+  "MR11010008": {lp:10, cm:25},
+  "MR11020002": {lp:10, cm:25},
+  "MR11020001": {lp:10, cm:25},
+  "PA01010001": {lp:10, cm:20},
+  "PA01010002": {lp:10, cm:20},
+  "PA01010003": {lp:10, cm:20},
+  "PA01010004": {lp:10, cm:20},
+  "PA01010011": {lp:10, cm:20},
+  "PA01010005": {lp:10, cm:20},
+  "PA01010006": {lp:10, cm:20},
+  "PA01010007": {lp:10, cm:20},
+  "PA01010008": {lp:10, cm:20},
+  "PA01010009": {lp:10, cm:20},
+  "MR01090002": {lp:10, cm:25},
+  "MR01090001": {lp:10, cm:25},
+  "MR01060001": {lp:10, cm:25},
+  "MR01060002": {lp:10, cm:25},
+  "MR01060003": {lp:10, cm:25},
+  "MR01060004": {lp:10, cm:25},
+  "MR01060005": {lp:10, cm:25},
+  "MR01050001": {lp:10, cm:25},
+  "MR01070001": {lp:10, cm:25},
+  "MR01070002": {lp:10, cm:25},
+  "PA01020001": {lp:10, cm:20},
+  "PA01020002": {lp:10, cm:20},
+  "PA01020003": {lp:10, cm:20},
+  "PA01020004": {lp:10, cm:20},
+  "PA01020005": {lp:10, cm:20},
+  "PA01020006": {lp:10, cm:20},
+  "MR01080001": {lp:10, cm:50},
+  "MR01080002": {lp:10, cm:50},
+  "PA01040001": {lp:1, cm:20},
+  "PA01040002": {lp:1, cm:20},
+  "PA02050030": {lp:1, cm:1},
+  "PA02050040": {lp:1, cm:1},
+  "PA02050038": {lp:1, cm:1},
+  "PA02050034": {lp:1, cm:1},
+  "PA02050036": {lp:1, cm:1},
+  "PA02050032": {lp:1, cm:1},
+  "PA02050042": {lp:1, cm:1},
+  "PA02050029": {lp:1, cm:1},
+  "PA02050039": {lp:1, cm:1},
+  "PA02050037": {lp:1, cm:1},
+  "PA02050033": {lp:1, cm:1},
+  "PA02050035": {lp:1, cm:1},
+  "PA02050031": {lp:1, cm:1},
+  "PA02050041": {lp:1, cm:1},
+  "PA02050001": {lp:1, cm:1},
+  "PA02050011": {lp:1, cm:1},
+  "PA02050009": {lp:1, cm:1},
+  "PA02050007": {lp:1, cm:1},
+  "PA02050005": {lp:1, cm:1},
+  "PA02050003": {lp:1, cm:1},
+  "PA02050013": {lp:1, cm:1},
+  "PA02050002": {lp:1, cm:1},
+  "PA02050012": {lp:1, cm:1},
+  "PA02050010": {lp:1, cm:1},
+  "PA02050008": {lp:1, cm:1},
+  "PA02050006": {lp:1, cm:1},
+  "PA02050004": {lp:1, cm:1},
+  "PA02050014": {lp:1, cm:1},
+  "PA02050015": {lp:1, cm:1},
+  "PA02050025": {lp:1, cm:1},
+  "PA02050023": {lp:1, cm:1},
+  "PA02050021": {lp:1, cm:1},
+  "PA02050019": {lp:1, cm:1},
+  "PA02050017": {lp:1, cm:1},
+  "PA02050027": {lp:1, cm:1},
+  "PA02050016": {lp:1, cm:1},
+  "PA02050026": {lp:1, cm:1},
+  "PA02050024": {lp:1, cm:1},
+  "PA02050022": {lp:1, cm:1},
+  "PA02050020": {lp:1, cm:1},
+  "PA02050018": {lp:1, cm:1},
+  "PA02050028": {lp:1, cm:1},
+  "PA02010023": {lp:1, cm:1},
+  "PA02010024": {lp:1, cm:1},
+  "PA02010025": {lp:1, cm:1},
+  "PA02010026": {lp:1, cm:1},
+  "PA02010027": {lp:1, cm:1},
+  "PA02010028": {lp:1, cm:1},
+  "PA02010029": {lp:1, cm:1},
+  "PA02010030": {lp:1, cm:1},
+  "PA02010031": {lp:1, cm:1},
+  "PA02010032": {lp:1, cm:1},
+  "PA02010015": {lp:1, cm:1},
+  "PA02010020": {lp:1, cm:1},
+  "PA02010012": {lp:1, cm:1},
+  "PA02010016": {lp:1, cm:1},
+  "PA02010021": {lp:1, cm:1},
+  "PA02010013": {lp:1, cm:1},
+  "PA02010018": {lp:1, cm:1},
+  "PA02010004": {lp:1, cm:1},
+  "PA02010009": {lp:1, cm:1},
+  "PA02010001": {lp:1, cm:1},
+  "PA02010005": {lp:1, cm:1},
+  "PA02010010": {lp:1, cm:1},
+  "PA02010002": {lp:1, cm:1},
+  "PA02010007": {lp:1, cm:1},
+  "PA02010017": {lp:10, cm:20},
+  "PA02010022": {lp:10, cm:20},
+  "PA02010014": {lp:10, cm:20},
+  "PA02010019": {lp:10, cm:20},
+  "PA02010006": {lp:10, cm:20},
+  "PA02010011": {lp:10, cm:20},
+  "PA02010003": {lp:10, cm:20},
+  "PA02010008": {lp:10, cm:20},
+  "PA02030001": {lp:1, cm:1},
+  "PA02030009": {lp:1, cm:1},
+  "PA02030005": {lp:1, cm:1},
+  "PA02030007": {lp:1, cm:1},
+  "PA02030003": {lp:1, cm:1},
+  "PA02030002": {lp:10, cm:20},
+  "PA02030010": {lp:10, cm:20},
+  "PA02030006": {lp:10, cm:20},
+  "PA02030008": {lp:10, cm:20},
+  "PA02030004": {lp:10, cm:20},
+  "MR02020001": {lp:10, cm:20},
+  "MR02020003": {lp:10, cm:20},
+  "MR02020002": {lp:10, cm:20},
+  "MR02020004": {lp:10, cm:20},
+  "MR02020005": {lp:10, cm:20},
+  "MR02020007": {lp:10, cm:20},
+  "MR02020006": {lp:10, cm:20},
+  "MR02020008": {lp:10, cm:20},
+  "MR02020009": {lp:10, cm:20},
+  "MR02020011": {lp:10, cm:20},
+  "MR02020010": {lp:10, cm:20},
+  "MR02020012": {lp:10, cm:20},
+  "MR02020013": {lp:10, cm:20},
+  "PA02040001": {lp:10, cm:20},
+  "PA02040002": {lp:10, cm:20},
+  "PA02040003": {lp:10, cm:20},
+  "PA02060004": {lp:10, cm:20},
+  "PA02060003": {lp:10, cm:20},
+  "PA02060001": {lp:10, cm:20},
+  "PA03010004": {lp:10, cm:20},
+  "PA03010035": {lp:10, cm:20},
+  "PA03010009": {lp:10, cm:20},
+  "PA03010025": {lp:10, cm:20},
+  "PA03010030": {lp:10, cm:20},
+  "PA03010014": {lp:10, cm:20},
+  "PA03010019": {lp:10, cm:20},
+  "PA03010005": {lp:10, cm:20},
+  "PA03010036": {lp:10, cm:20},
+  "PA03010010": {lp:10, cm:20},
+  "PA03010026": {lp:10, cm:20},
+  "PA03010031": {lp:10, cm:20},
+  "PA03010015": {lp:10, cm:20},
+  "PA03010020": {lp:10, cm:20},
+  "PA03010001": {lp:10, cm:20},
+  "PA03010032": {lp:10, cm:20},
+  "PA03010006": {lp:10, cm:20},
+  "PA03010022": {lp:10, cm:20},
+  "PA03010027": {lp:10, cm:20},
+  "PA03010011": {lp:10, cm:20},
+  "PA03010016": {lp:10, cm:20},
+  "PA03010002": {lp:10, cm:20},
+  "PA03010033": {lp:10, cm:20},
+  "PA03010007": {lp:10, cm:20},
+  "PA03010023": {lp:10, cm:20},
+  "PA03010028": {lp:10, cm:20},
+  "PA03010012": {lp:10, cm:20},
+  "PA03010017": {lp:10, cm:20},
+  "PA03010003": {lp:10, cm:20},
+  "PA03010034": {lp:10, cm:20},
+  "PA03010008": {lp:10, cm:20},
+  "PA03010024": {lp:10, cm:20},
+  "PA03010029": {lp:10, cm:20},
+  "PA03010013": {lp:10, cm:20},
+  "PA03010018": {lp:10, cm:20},
+  "PA03020004": {lp:10, cm:20},
+  "PA03020023": {lp:10, cm:20},
+  "PA03020018": {lp:10, cm:20},
+  "PA03020013": {lp:10, cm:20},
+  "PA03020028": {lp:10, cm:20},
+  "PA03020006": {lp:10, cm:20},
+  "PA03020024": {lp:10, cm:20},
+  "PA03020019": {lp:10, cm:20},
+  "PA03020014": {lp:10, cm:20},
+  "PA03020029": {lp:10, cm:20},
+  "PA03020001": {lp:10, cm:20},
+  "PA03020020": {lp:10, cm:20},
+  "PA03020015": {lp:10, cm:20},
+  "PA03020010": {lp:10, cm:20},
+  "PA03020025": {lp:10, cm:20},
+  "PA03020002": {lp:10, cm:20},
+  "PA03020021": {lp:10, cm:20},
+  "PA03020016": {lp:10, cm:20},
+  "PA03020011": {lp:10, cm:20},
+  "PA03020026": {lp:10, cm:20},
+  "PA03020003": {lp:10, cm:20},
+  "PA03020022": {lp:10, cm:20},
+  "PA03020017": {lp:10, cm:20},
+  "PA03020012": {lp:10, cm:20},
+  "PA03020027": {lp:10, cm:20},
+  "PA03030026": {lp:10, cm:20},
+  "PA03030018": {lp:10, cm:20},
+  "PA03030022": {lp:10, cm:20},
+  "PA03030014": {lp:10, cm:20},
+  "PA03030010": {lp:10, cm:20},
+  "PA03030006": {lp:10, cm:20},
+  "PA03030030": {lp:10, cm:20},
+  "PA03030002": {lp:10, cm:20},
+  "PA03030034": {lp:10, cm:20},
+  "PA03030027": {lp:10, cm:20},
+  "PA03030019": {lp:10, cm:20},
+  "PA03030023": {lp:10, cm:20},
+  "PA03030015": {lp:10, cm:20},
+  "PA03030011": {lp:10, cm:20},
+  "PA03030007": {lp:10, cm:20},
+  "PA03030028": {lp:10, cm:20},
+  "PA03030020": {lp:10, cm:20},
+  "PA03030024": {lp:10, cm:20},
+  "PA03030016": {lp:10, cm:20},
+  "PA03030012": {lp:10, cm:20},
+  "PA03030008": {lp:10, cm:20},
+  "PA03030025": {lp:10, cm:20},
+  "PA03030017": {lp:10, cm:20},
+  "PA03030021": {lp:10, cm:20},
+  "PA03030013": {lp:10, cm:20},
+  "PA03030009": {lp:10, cm:20},
+  "PA03030005": {lp:10, cm:20},
+  "PA03040002": {lp:1, cm:20},
+  "PA03040003": {lp:1, cm:20},
+  "PA03040004": {lp:1, cm:20},
+  "PA03040005": {lp:1, cm:20},
+  "PA03040006": {lp:1, cm:20},
+  "PA03040007": {lp:1, cm:20},
+  "PA03040008": {lp:1, cm:20},
+  "PA03040009": {lp:1, cm:20},
+  "PA03040010": {lp:1, cm:20},
+  "PA03040011": {lp:1, cm:20},
+  "PA03050002": {lp:1, cm:20},
+  "PA03050003": {lp:1, cm:20},
+  "PA03050004": {lp:1, cm:20},
+  "PA03050005": {lp:1, cm:20},
+  "PA03050006": {lp:1, cm:20},
+  "PA03050007": {lp:1, cm:20},
+  "PA03050008": {lp:1, cm:20},
+  "PA03050009": {lp:1, cm:20},
+  "PA03050010": {lp:1, cm:20},
+  "PA03050011": {lp:1, cm:20},
+  "PA03060002": {lp:1, cm:20},
+  "PA03060003": {lp:1, cm:20},
+  "PA03060004": {lp:1, cm:20},
+  "PA03060005": {lp:1, cm:20},
+  "PA03060006": {lp:1, cm:20},
+  "PA03060007": {lp:1, cm:20},
+  "PA03060008": {lp:1, cm:20},
+  "PA03060009": {lp:1, cm:20},
+  "PA03060010": {lp:1, cm:20},
+  "PA03060011": {lp:1, cm:20},
+  "PA03070001": {lp:1, cm:20},
+  "PA03070002": {lp:1, cm:20},
+  "PA03070003": {lp:1, cm:20},
+  "PA03070004": {lp:1, cm:20},
+  "PA03070005": {lp:1, cm:20},
+  "PA03070006": {lp:1, cm:20},
+  "PA03070007": {lp:1, cm:20},
+  "PA03070008": {lp:1, cm:20},
+  "PA03070009": {lp:1, cm:20},
+  "PA03070010": {lp:1, cm:20},
+  "PA12010001": {lp:10, cm:10},
+  "PA12010002": {lp:10, cm:10},
+  "PA12010003": {lp:10, cm:10},
+  "PA12010004": {lp:10, cm:10},
+  "PA12010005": {lp:10, cm:10},
+  "PA12010006": {lp:10, cm:10},
+  "PA12010007": {lp:10, cm:10},
+  "PA12010008": {lp:10, cm:10},
+  "PA12010009": {lp:10, cm:10},
+  "PA12010010": {lp:10, cm:10},
+  "PA12010016": {lp:10, cm:10},
+  "PA12010017": {lp:10, cm:10},
+  "PA12010018": {lp:10, cm:10},
+  "PA12010019": {lp:10, cm:10},
+  "PA12010020": {lp:10, cm:10},
+  "PA06010004": {lp:10, cm:20},
+  "PA06010003": {lp:10, cm:20},
+  "PA06010006": {lp:10, cm:20},
+  "PA06010005": {lp:10, cm:20},
+  "PA06010002": {lp:10, cm:20},
+  "PA06010001": {lp:10, cm:20},
+  "PA08010005": {lp:10, cm:20},
+  "PA08010003": {lp:10, cm:20},
+  "PA08010002": {lp:10, cm:20},
+  "PA08010007": {lp:10, cm:20},
+  "PA08010004": {lp:10, cm:20},
+  "PA08010008": {lp:10, cm:20},
+  "PA08010001": {lp:10, cm:20}
+};
+
 var cdFilter = "all", cdQ = "", cdVis = 200;
 
 var cdTagClass = {
@@ -14963,16 +15278,21 @@ function renderCD() {
   document.getElementById("cdNoRes").style.display = fil.length ? "none" : "block";
   var rows = fil.slice(0, cdVis).map(function(p){
     var cls = cdTagClass[p.linha] || "";
+    var lot = CD_LOTES[p.sku] || {};
+    var lpStr = lot.lp ? lot.lp : "-";
+    var cmStr = lot.cm ? lot.cm : "-";
     return "<tr>" +
       "<td style='font-family:monospace;font-size:11px'>" + p.sku + "</td>" +
       "<td><span class='tag " + cls + "'>" + p.sub + "</span></td>" +
       "<td>" + p.desc + "</td>" +
       "<td style='text-align:right;font-weight:600;color:var(--green)'>" + fmt(p.val) + "</td>" +
       "<td style='text-align:right;color:var(--text2);font-size:12px'>" + p.ipi + "</td>" +
+      "<td style='text-align:right;font-size:12px;color:var(--text2)'>" + lpStr + "</td>" +
+      "<td style='text-align:right;font-size:12px;color:var(--text2)'>" + cmStr + "</td>" +
     "</tr>";
   }).join("");
   if (fil.length > cdVis) {
-    rows += "<tr><td colspan='5' style='text-align:center;padding:11px'>" +
+    rows += "<tr><td colspan='7' style='text-align:center;padding:11px'>" +
       "<button onclick='cdLoadMore()' style='border:1px solid #dde3ec;background:#f8fafc;border-radius:8px;padding:7px 18px;cursor:pointer;font-size:13px'>" +
       "Carregar mais (" + cdVis + " de " + fil.length + ")" +
       "</button></td></tr>";
@@ -15005,23 +15325,59 @@ function cdGenNum() {
 (function(){ var el = document.getElementById("cdNumOrcLabel"); if(el) el.textContent = "No " + CD_NUM_ORC; })();
 
 (function(){ var el=document.getElementById("cdCNPJ"); if(el) el.addEventListener("input", function() {
-  var masked = cnpjMask(this.value);
-  if (masked !== this.value) this.value = masked;
+  var raw = this.value;
+  var masked = cnpjMask(raw);
+  if (masked !== raw) this.value = masked;
   var nums = masked.replace(/\D/g,"");
-  if (nums.length === 14 && cnpjValido(masked)) {
-    fetch("https://publica.cnpj.ws/cnpj/" + nums)
-      .then(function(r){ return r.json(); })
-      .then(function(d){
-        if (!d.erro && d.razao_social) {
-          document.getElementById("cdNome").value = d.razao_social || "";
-          if (d.emails && d.emails.length) document.getElementById("cdEmail").value = d.emails[0].email;
-          if (d.telefones && d.telefones.length) {
-            var t = d.telefones[0];
-            document.getElementById("cdWhats").value = "(" + (t.ddd||"") + ") " + (t.numero||"");
-          }
-        }
-      }).catch(function(){});
+  var stEl = document.getElementById("cdCnpjStatus");
+  var msgEl = document.getElementById("cdCnpjMsg");
+  if (nums.length < 14) {
+    if (stEl) { stEl.textContent = ""; }
+    if (msgEl) { msgEl.textContent = ""; }
+    return;
   }
+  if (!cnpjValido(masked)) {
+    if (stEl) stEl.textContent = "❌";
+    if (msgEl) { msgEl.textContent = "CNPJ inválido"; msgEl.style.color = "var(--red)"; }
+    return;
+  }
+  if (stEl) stEl.textContent = "⏳";
+  if (msgEl) { msgEl.textContent = "Consultando Receita Federal..."; msgEl.style.color = "var(--text2)"; }
+  fetch("https://publica.cnpj.ws/cnpj/" + nums)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (!d.erro && d.razao_social) {
+        document.getElementById("cdNome").value = d.razao_social || "";
+        if (d.emails && d.emails.length) document.getElementById("cdEmail").value = d.emails[0].email;
+        if (d.telefones && d.telefones.length) {
+          var t = d.telefones[0];
+          document.getElementById("cdWhats").value = "(" + (t.ddd||"") + ") " + (t.numero||"");
+        }
+        if (stEl) stEl.textContent = "✅";
+        if (msgEl) { msgEl.textContent = d.razao_social + (d.municipio ? " — " + d.municipio.descricao : ""); msgEl.style.color = "var(--green)"; }
+      } else {
+        if (stEl) stEl.textContent = "❌";
+        if (msgEl) { msgEl.textContent = "CNPJ não encontrado"; msgEl.style.color = "var(--red)"; }
+      }
+    }).catch(function(){
+      fetch("https://receitaws.com.br/v1/cnpj/" + nums)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d.status !== "ERROR") {
+            document.getElementById("cdNome").value = d.nome || "";
+            if (d.email) document.getElementById("cdEmail").value = d.email;
+            if (d.telefone) document.getElementById("cdWhats").value = d.telefone;
+            if (stEl) stEl.textContent = "✅";
+            if (msgEl) { msgEl.textContent = d.nome || ""; msgEl.style.color = "var(--green)"; }
+          } else {
+            if (stEl) stEl.textContent = "⚠️";
+            if (msgEl) { msgEl.textContent = "Consulta indisponível. Preencha manualmente."; msgEl.style.color = "#b45309"; }
+          }
+        }).catch(function(){
+          if (stEl) stEl.textContent = "⚠️";
+          if (msgEl) { msgEl.textContent = "Consulta indisponível. Preencha manualmente."; msgEl.style.color = "#b45309"; }
+        });
+    });
   }); })();
 
 document.addEventListener("input", function(e) {
@@ -15060,9 +15416,16 @@ function cdAddItem(sku) {
   var p = PRODUTOS_CD.find(function(x){ return x.sku === sku; });
   if (!p) return;
   var ipiPct = parseFloat(p.ipi.replace(",",".").replace("%","")) || 0;
+  var lot = CD_LOTES[sku] || {};
+  var lp = lot.lp || 1;
+  var cm = lot.cm || null;
   var ex = cdOrcItems.find(function(x){ return x.sku === sku; });
-  if (ex) { ex.qty++; }
-  else cdOrcItems.push({id:cdNextId++, sku:p.sku, desc:p.desc, sub:p.sub, val:p.val, ipiPct:ipiPct, ipiStr:p.ipi, qty:1});
+  if (ex) {
+    ex.qty += lp;
+  } else {
+    cdOrcItems.push({id:cdNextId++, sku:p.sku, desc:p.desc, sub:p.sub,
+      val:p.val, ipiPct:ipiPct, ipiStr:p.ipi, qty:lp, lp:lp, cm:cm});
+  }
   document.getElementById("cdPSearch").value = "";
   document.getElementById("cdPDrop").classList.remove("open");
   cdRenderItems();
@@ -15097,9 +15460,17 @@ function cdRenderItems() {
   document.getElementById("cdIBody").innerHTML = cdOrcItems.map(function(i){
     var lineVal = i.val * i.qty;
     var lineIpi = lineVal * i.ipiPct / 100;
+    var lotWarn = "";
+    if (i.lp && i.qty < i.lp) {
+      lotWarn = "<div style='font-size:10px;color:#b45309;margin-top:2px'>⚠ Mín: " + i.lp + " un (lote padrão)</div>";
+    } else if (i.lp && i.lp > 1 && i.qty % i.lp !== 0) {
+      lotWarn = "<div style='font-size:10px;color:#b45309;margin-top:2px'>⚠ Qtd deve ser múltiplo de " + i.lp + "</div>";
+    }
+    var lotInfo = i.lp ? "<div style='font-size:9px;color:var(--text2)'>Lote: " + i.lp + (i.cm ? " | Master: " + i.cm : "") + "</div>" : "";
     return "<tr>" +
       "<td><div style='font-weight:500;font-size:11.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' title='" + i.desc + "'>" + i.desc + "</div>" +
-           "<div style='font-size:10px;color:var(--text2)'>" + i.sku + " &middot; " + i.sub + "</div></td>" +
+           "<div style='font-size:10px;color:var(--text2)'>" + i.sku + " &middot; " + i.sub + "</div>" +
+           lotInfo + lotWarn + "</td>" +
       "<td style='text-align:center'><input class='qi' type='number' min='1' value='" + i.qty + "' onchange='cdUpdateQty(" + i.id + ",this.value)'></td>" +
       "<td style='text-align:right;font-size:11.5px'>" + fmt(i.val) + "</td>" +
       "<td style='text-align:right;font-size:11px;color:#c2410c'>" + i.ipiStr + "<br>" + fmt(lineIpi) + "</td>" +
@@ -15204,7 +15575,9 @@ function gerarPDFCD() {
   /* ── Header ── */
   doc.setFillColor.apply(doc, COR_CINZA); doc.rect(0, 0, W, 42, "F");
   doc.setFillColor.apply(doc, COR_LARANJA); doc.rect(0, 40, W, 2, "F");
-  try { doc.addImage("data:image/jpeg;base64," + LOGO_SUB, "JPEG", M, 4, 34, 34); } catch(e) {}
+  /* Caixa branca para o logo */
+  doc.setFillColor(255,255,255); doc.rect(M-2, 3, 38, 36, "F");
+  try { doc.addImage("data:image/jpeg;base64," + LOGO_SUB, "JPEG", M, 5, 34, 32); } catch(e) {}
   doc.setTextColor(255, 255, 255); doc.setFontSize(17); doc.setFont("helvetica", "bold");
   doc.text("AS Representacoes Comerciais", 56, 16);
   doc.setFontSize(9); doc.setFont("helvetica", "normal");
@@ -15336,7 +15709,14 @@ function gerarPDFCD() {
         <div class="ctitle"><i class="fa fa-user"></i> Dados do Cliente</div>
         <div class="fr">
           <div class="fl"><label>Nome / Razao Social *</label><input type="text" id="cdNome" placeholder="Ex: Construcoes Beta Ltda"></div>
-          <div class="fl"><label>CNPJ</label><input type="text" id="cdCNPJ" placeholder="00.000.000/0001-00" maxlength="18"></div>
+          <div class="fl">
+            <label>CNPJ</label>
+            <div style="position:relative">
+              <input type="text" id="cdCNPJ" placeholder="00.000.000/0001-00" maxlength="18" style="width:100%;padding-right:32px">
+              <span id="cdCnpjStatus" style="position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:13px"></span>
+            </div>
+            <span id="cdCnpjMsg" style="font-size:11px;color:var(--text2);margin-top:3px"></span>
+          </div>
         </div>
         <div class="fr">
           <div class="fl"><label>WhatsApp</label><input type="text" id="cdWhats" placeholder="(00) 00000-0000"></div>
