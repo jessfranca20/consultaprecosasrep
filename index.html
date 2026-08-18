@@ -14459,6 +14459,45 @@ function buscarCNPJ(cnpj) {
   buscarCNPJ(masked);
   }); })();
 
+function setCdCnpjStatus(icon, msg, color) {
+  var st  = document.getElementById("cdCnpjStatus");
+  var msg2 = document.getElementById("cdCnpjMsg");
+  if (st)   st.textContent    = icon;
+  if (msg2) { msg2.textContent = msg; msg2.style.color = color || "var(--text2)"; }
+}
+
+function buscarCNPJ_CD(cnpj) {
+  var nums = cnpj.replace(/\D/g,"");
+  setCdCnpjStatus("⏳","Consultando Receita Federal...","var(--text2)");
+  fetch("https://publica.cnpj.ws/cnpj/" + nums)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.erro || !d.razao_social) { setCdCnpjStatus("❌","CNPJ não encontrado","var(--red)"); return; }
+      document.getElementById("cdNome").value = d.razao_social || "";
+      if (d.emails && d.emails.length) document.getElementById("cdEmail").value = d.emails[0].email;
+      if (d.telefones && d.telefones.length) {
+        var t0 = d.telefones[0];
+        var tel = "(" + (t0.ddd||"") + ") " + (t0.numero||"");
+        if (tel.trim().length > 3) document.getElementById("cdWhats").value = tel;
+      }
+      setCdCnpjStatus("✅", d.razao_social + (d.municipio ? " — " + d.municipio.descricao : ""), "var(--green)");
+    })
+    .catch(function(){
+      fetch("https://receitaws.com.br/v1/cnpj/" + nums)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if (d.status === "ERROR") { setCdCnpjStatus("❌","CNPJ não encontrado","var(--red)"); return; }
+          document.getElementById("cdNome").value  = d.nome || "";
+          if (d.email)   document.getElementById("cdEmail").value  = d.email;
+          if (d.telefone) document.getElementById("cdWhats").value = d.telefone;
+          setCdCnpjStatus("✅", d.nome + (d.municipio ? " — " + d.municipio : ""), "var(--green)");
+        })
+        .catch(function(){
+          setCdCnpjStatus("⚠️","Consulta indisponível. Preencha manualmente.","#b45309");
+        });
+    });
+}
+
 /* ---------- HISTORY ---------- */
 function getHist() { try { return JSON.parse(localStorage.getItem("asrep_h5") || "[]"); } catch(e) { return []; } }
 function saveHist(h) { localStorage.setItem("asrep_h5", JSON.stringify(h)); }
@@ -15324,61 +15363,16 @@ function cdGenNum() {
 }
 (function(){ var el = document.getElementById("cdNumOrcLabel"); if(el) el.textContent = "No " + CD_NUM_ORC; })();
 
-(function(){ var el=document.getElementById("cdCNPJ"); if(el) el.addEventListener("input", function() {
-  var raw = this.value;
+document.addEventListener("input", function(e) {
+  if (!e.target || e.target.id !== "cdCNPJ") return;
+  var raw    = e.target.value;
   var masked = cnpjMask(raw);
-  if (masked !== raw) this.value = masked;
+  if (masked !== raw) e.target.value = masked;
   var nums = masked.replace(/\D/g,"");
-  var stEl = document.getElementById("cdCnpjStatus");
-  var msgEl = document.getElementById("cdCnpjMsg");
-  if (nums.length < 14) {
-    if (stEl) { stEl.textContent = ""; }
-    if (msgEl) { msgEl.textContent = ""; }
-    return;
-  }
-  if (!cnpjValido(masked)) {
-    if (stEl) stEl.textContent = "❌";
-    if (msgEl) { msgEl.textContent = "CNPJ inválido"; msgEl.style.color = "var(--red)"; }
-    return;
-  }
-  if (stEl) stEl.textContent = "⏳";
-  if (msgEl) { msgEl.textContent = "Consultando Receita Federal..."; msgEl.style.color = "var(--text2)"; }
-  fetch("https://publica.cnpj.ws/cnpj/" + nums)
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if (!d.erro && d.razao_social) {
-        document.getElementById("cdNome").value = d.razao_social || "";
-        if (d.emails && d.emails.length) document.getElementById("cdEmail").value = d.emails[0].email;
-        if (d.telefones && d.telefones.length) {
-          var t = d.telefones[0];
-          document.getElementById("cdWhats").value = "(" + (t.ddd||"") + ") " + (t.numero||"");
-        }
-        if (stEl) stEl.textContent = "✅";
-        if (msgEl) { msgEl.textContent = d.razao_social + (d.municipio ? " — " + d.municipio.descricao : ""); msgEl.style.color = "var(--green)"; }
-      } else {
-        if (stEl) stEl.textContent = "❌";
-        if (msgEl) { msgEl.textContent = "CNPJ não encontrado"; msgEl.style.color = "var(--red)"; }
-      }
-    }).catch(function(){
-      fetch("https://receitaws.com.br/v1/cnpj/" + nums)
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-          if (d.status !== "ERROR") {
-            document.getElementById("cdNome").value = d.nome || "";
-            if (d.email) document.getElementById("cdEmail").value = d.email;
-            if (d.telefone) document.getElementById("cdWhats").value = d.telefone;
-            if (stEl) stEl.textContent = "✅";
-            if (msgEl) { msgEl.textContent = d.nome || ""; msgEl.style.color = "var(--green)"; }
-          } else {
-            if (stEl) stEl.textContent = "⚠️";
-            if (msgEl) { msgEl.textContent = "Consulta indisponível. Preencha manualmente."; msgEl.style.color = "#b45309"; }
-          }
-        }).catch(function(){
-          if (stEl) stEl.textContent = "⚠️";
-          if (msgEl) { msgEl.textContent = "Consulta indisponível. Preencha manualmente."; msgEl.style.color = "#b45309"; }
-        });
-    });
-  }); })();
+  if (nums.length < 14) { setCdCnpjStatus("","",""); return; }
+  if (!cnpjValido(masked)) { setCdCnpjStatus("❌","CNPJ inválido","var(--red)"); return; }
+  buscarCNPJ_CD(masked);
+})
 
 document.addEventListener("input", function(e) {
   if (!e.target || e.target.id !== "cdPSearch") return;
