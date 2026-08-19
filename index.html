@@ -259,6 +259,9 @@ body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(
           <div class="fl"><label>WhatsApp</label><input type="text" id="cWhats" placeholder="(00) 00000-0000"></div>
           <div class="fl"><label>E-mail</label><input type="text" id="cEmail" placeholder="contato@empresa.com"></div>
         </div>
+        <div class="fr full" style="margin-top:0">
+          <div class="fl"><label>Endereço</label><input type="text" id="cEndereco" placeholder="Rua, número, bairro, cidade - UF, CEP" style="color:var(--text2)"></div>
+        </div>
       </div>
       <!-- Produtos -->
       <div class="card">
@@ -14419,18 +14422,40 @@ function buscarCNPJ(cnpj) {
       if (d.erro || !d.razao_social) { setCnpjStatus("❌","CNPJ não encontrado","var(--red)"); return; }
       // Razão social
       document.getElementById("cNome").value = d.razao_social || "";
-      // Email — pega o primeiro email disponível
+      // Email
       var email = "";
-      if (d.emails && d.emails.length) email = d.emails[0].email;
+      if (d.estabelecimento && d.estabelecimento.email) email = d.estabelecimento.email;
+      if (!email && d.emails && d.emails.length) email = d.emails[0].email;
       if (email) document.getElementById("cEmail").value = email;
-      // Telefone — pega o primeiro disponível
+      // Telefone
       var tel = "";
-      if (d.telefones && d.telefones.length) {
+      if (d.estabelecimento && d.estabelecimento.ddd1 && d.estabelecimento.telefone1) {
+        tel = "(" + d.estabelecimento.ddd1 + ") " + d.estabelecimento.telefone1;
+      } else if (d.telefones && d.telefones.length) {
         var t0 = d.telefones[0];
         tel = "(" + (t0.ddd||"") + ") " + (t0.numero||"");
       }
       if (tel.trim().length > 3) document.getElementById("cWhats").value = tel;
-      setCnpjStatus("✅", d.razao_social + (d.municipio ? " — " + d.municipio.descricao : ""), "var(--green)");
+      // Endereço
+      var end = "";
+      if (d.estabelecimento) {
+        var es = d.estabelecimento;
+        var partes = [];
+        if (es.logradouro) partes.push(es.logradouro + (es.numero ? ", " + es.numero : ""));
+        if (es.complemento) partes.push(es.complemento);
+        if (es.bairro) partes.push(es.bairro);
+        var cidade = "";
+        if (es.municipio && es.municipio.descricao) cidade = es.municipio.descricao;
+        if (es.estado && es.estado.sigla) cidade += (cidade ? " - " : "") + es.estado.sigla;
+        if (cidade) partes.push(cidade);
+        if (es.cep) partes.push("CEP " + es.cep.replace(/(\d{5})(\d{3})/, "$1-$2"));
+        end = partes.join(", ");
+      }
+      if (end) document.getElementById("cEndereco").value = end;
+      var cidade_status = "";
+      if (d.estabelecimento && d.estabelecimento.municipio) cidade_status = " — " + d.estabelecimento.municipio.descricao;
+      else if (d.municipio) cidade_status = " — " + d.municipio.descricao;
+      setCnpjStatus("✅", d.razao_social + cidade_status, "var(--green)");
     })
     .catch(function(){
       // Fallback: tenta ReceitaWS
@@ -14439,8 +14464,16 @@ function buscarCNPJ(cnpj) {
         .then(function(d){
           if (d.status === "ERROR") { setCnpjStatus("❌","CNPJ não encontrado","var(--red)"); return; }
           document.getElementById("cNome").value = d.nome || "";
-          if (d.email) document.getElementById("cEmail").value = d.email;
+          if (d.email)    document.getElementById("cEmail").value  = d.email;
           if (d.telefone) document.getElementById("cWhats").value = d.telefone;
+          // Endereço via ReceitaWS
+          var endRWS = [];
+          if (d.logradouro) endRWS.push(d.logradouro + (d.numero ? ", " + d.numero : ""));
+          if (d.complemento) endRWS.push(d.complemento);
+          if (d.bairro) endRWS.push(d.bairro);
+          if (d.municipio) endRWS.push(d.municipio + (d.uf ? " - " + d.uf : ""));
+          if (d.cep) endRWS.push("CEP " + d.cep);
+          if (endRWS.length) document.getElementById("cEndereco").value = endRWS.join(", ");
           setCnpjStatus("✅", d.nome + (d.municipio ? " — " + d.municipio : ""), "var(--green)");
         })
         .catch(function(){
@@ -14474,13 +14507,40 @@ function buscarCNPJ_CD(cnpj) {
     .then(function(d){
       if (d.erro || !d.razao_social) { setCdCnpjStatus("❌","CNPJ não encontrado","var(--red)"); return; }
       document.getElementById("cdNome").value = d.razao_social || "";
-      if (d.emails && d.emails.length) document.getElementById("cdEmail").value = d.emails[0].email;
-      if (d.telefones && d.telefones.length) {
+      // Email
+      var email = "";
+      if (d.estabelecimento && d.estabelecimento.email) email = d.estabelecimento.email;
+      if (!email && d.emails && d.emails.length) email = d.emails[0].email;
+      if (email) document.getElementById("cdEmail").value = email;
+      // Telefone
+      var tel = "";
+      if (d.estabelecimento && d.estabelecimento.ddd1 && d.estabelecimento.telefone1) {
+        tel = "(" + d.estabelecimento.ddd1 + ") " + d.estabelecimento.telefone1;
+      } else if (d.telefones && d.telefones.length) {
         var t0 = d.telefones[0];
-        var tel = "(" + (t0.ddd||"") + ") " + (t0.numero||"");
-        if (tel.trim().length > 3) document.getElementById("cdWhats").value = tel;
+        tel = "(" + (t0.ddd||"") + ") " + (t0.numero||"");
       }
-      setCdCnpjStatus("✅", d.razao_social + (d.municipio ? " — " + d.municipio.descricao : ""), "var(--green)");
+      if (tel.trim().length > 3) document.getElementById("cdWhats").value = tel;
+      // Endereço
+      var end = "";
+      if (d.estabelecimento) {
+        var es = d.estabelecimento;
+        var partes = [];
+        if (es.logradouro) partes.push(es.logradouro + (es.numero ? ", " + es.numero : ""));
+        if (es.complemento) partes.push(es.complemento);
+        if (es.bairro) partes.push(es.bairro);
+        var cidade = "";
+        if (es.municipio && es.municipio.descricao) cidade = es.municipio.descricao;
+        if (es.estado && es.estado.sigla) cidade += (cidade ? " - " : "") + es.estado.sigla;
+        if (cidade) partes.push(cidade);
+        if (es.cep) partes.push("CEP " + es.cep.replace(/(\d{5})(\d{3})/, "$1-$2"));
+        end = partes.join(", ");
+      }
+      if (end) document.getElementById("cdEndereco").value = end;
+      var cidade_status = "";
+      if (d.estabelecimento && d.estabelecimento.municipio) cidade_status = " — " + d.estabelecimento.municipio.descricao;
+      else if (d.municipio) cidade_status = " — " + d.municipio.descricao;
+      setCdCnpjStatus("✅", d.razao_social + cidade_status, "var(--green)");
     })
     .catch(function(){
       fetch("https://receitaws.com.br/v1/cnpj/" + nums)
@@ -14530,10 +14590,11 @@ function renderHist() {
 function loadHist(hid) {
   var h = getHist().find(function(x) { return x.id === hid; });
   if (!h) return;
-  document.getElementById("cNome").value  = h.nome  || "";
-  document.getElementById("cCNPJ").value  = h.cnpj  || "";
-  document.getElementById("cWhats").value = h.whats || "";
-  document.getElementById("cEmail").value = h.email || "";
+  document.getElementById("cNome").value     = h.nome     || "";
+  document.getElementById("cCNPJ").value     = h.cnpj     || "";
+  document.getElementById("cWhats").value    = h.whats    || "";
+  document.getElementById("cEmail").value    = h.email    || "";
+  document.getElementById("cEndereco").value = h.endereco || "";
   orcItems = (h.items || []).map(function(i) { return Object.assign({}, i, {id: nextId++}); });
   if (h.disc) setDiscount(h.disc);
   renderItems();
@@ -14559,10 +14620,11 @@ function gerarPDF() {
   if (!orcItems.length) { alert("Adicione ao menos um produto."); return; }
   var nome = document.getElementById("cNome").value.trim();
   if (!nome) { alert("Informe o nome do cliente."); return; }
-  var cnpj  = document.getElementById("cCNPJ").value.trim();
-  var whats = document.getElementById("cWhats").value.trim();
-  var email = document.getElementById("cEmail").value.trim();
-  var val   = document.getElementById("validade").value;
+  var cnpj     = document.getElementById("cCNPJ").value.trim();
+  var whats    = document.getElementById("cWhats").value.trim();
+  var email    = document.getElementById("cEmail").value.trim();
+  var endereco = document.getElementById("cEndereco").value.trim();
+  var val      = document.getElementById("validade").value;
   var pag   = document.getElementById("pagamento").value;
   var fret  = document.getElementById("frete").value;
   var obs   = document.getElementById("obs").value.trim();
@@ -14587,7 +14649,7 @@ function gerarPDF() {
   y = 52;
 
   /* Client block */
-  var hCli = (cnpj || whats || email) ? 28 : 16;
+  var hCli = (cnpj || whats || email) ? (endereco ? 34 : 28) : 16;
   doc.setFillColor(240,244,252); doc.rect(M, y-4, W-2*M, hCli, "F");
   doc.setTextColor(15,34,68); doc.setFontSize(8); doc.setFont("helvetica","bold");
   doc.text("DADOS DO CLIENTE", M+2, y+1);
@@ -14596,6 +14658,7 @@ function gerarPDF() {
   if (cnpj) { doc.setFontSize(9); doc.text("CNPJ: " + cnpj, W-M, y+9, {align:"right"}); }
   var cont = [whats, email].filter(Boolean).join("   |   ");
   if (cont) { doc.setFontSize(9); doc.setTextColor(90,100,128); doc.text(cont, M+2, y+17); }
+  if (endereco) { doc.setFontSize(8.5); doc.setTextColor(90,100,128); doc.text(endereco, M+2, y+23); }
   y += hCli + 8;
 
   /* Table header */
@@ -14660,7 +14723,7 @@ function gerarPDF() {
   /* Save to history */
   var hid = "h" + Date.now();
   var h = getHist();
-  h.push({id:hid, nome:nome, cnpj:cnpj, whats:whats, email:email,
+  h.push({id:hid, nome:nome, cnpj:cnpj, whats:whats, email:email, endereco:endereco,
     numOrc:NUM_ORC, data:new Date().toLocaleDateString("pt-BR"),
     total:total, disc:selDisc, nitens:orcItems.length,
     items: JSON.parse(JSON.stringify(orcItems))});
@@ -15698,13 +15761,40 @@ function buscarCNPJ_CD(cnpj) {
     .then(function(d){
       if (d.erro || !d.razao_social) { setCdCnpjStatus("❌","CNPJ não encontrado","var(--red)"); return; }
       document.getElementById("cdNome").value = d.razao_social || "";
-      if (d.emails && d.emails.length) document.getElementById("cdEmail").value = d.emails[0].email;
-      if (d.telefones && d.telefones.length) {
+      // Email
+      var email = "";
+      if (d.estabelecimento && d.estabelecimento.email) email = d.estabelecimento.email;
+      if (!email && d.emails && d.emails.length) email = d.emails[0].email;
+      if (email) document.getElementById("cdEmail").value = email;
+      // Telefone
+      var tel = "";
+      if (d.estabelecimento && d.estabelecimento.ddd1 && d.estabelecimento.telefone1) {
+        tel = "(" + d.estabelecimento.ddd1 + ") " + d.estabelecimento.telefone1;
+      } else if (d.telefones && d.telefones.length) {
         var t0 = d.telefones[0];
-        var tel = "(" + (t0.ddd||"") + ") " + (t0.numero||"");
-        if (tel.trim().length > 3) document.getElementById("cdWhats").value = tel;
+        tel = "(" + (t0.ddd||"") + ") " + (t0.numero||"");
       }
-      setCdCnpjStatus("✅", d.razao_social + (d.municipio ? " — " + d.municipio.descricao : ""), "var(--green)");
+      if (tel.trim().length > 3) document.getElementById("cdWhats").value = tel;
+      // Endereço
+      var end = "";
+      if (d.estabelecimento) {
+        var es = d.estabelecimento;
+        var partes = [];
+        if (es.logradouro) partes.push(es.logradouro + (es.numero ? ", " + es.numero : ""));
+        if (es.complemento) partes.push(es.complemento);
+        if (es.bairro) partes.push(es.bairro);
+        var cidade = "";
+        if (es.municipio && es.municipio.descricao) cidade = es.municipio.descricao;
+        if (es.estado && es.estado.sigla) cidade += (cidade ? " - " : "") + es.estado.sigla;
+        if (cidade) partes.push(cidade);
+        if (es.cep) partes.push("CEP " + es.cep.replace(/(\d{5})(\d{3})/, "$1-$2"));
+        end = partes.join(", ");
+      }
+      if (end) document.getElementById("cdEndereco").value = end;
+      var cidade_status = "";
+      if (d.estabelecimento && d.estabelecimento.municipio) cidade_status = " — " + d.estabelecimento.municipio.descricao;
+      else if (d.municipio) cidade_status = " — " + d.municipio.descricao;
+      setCdCnpjStatus("✅", d.razao_social + cidade_status, "var(--green)");
     })
     .catch(function(){
       fetch("https://receitaws.com.br/v1/cnpj/" + nums)
@@ -15908,10 +15998,11 @@ function renderCDHist() {
 function loadCDHist(hid) {
   var h = getCDHist().find(function(x){ return x.id === hid; });
   if (!h) return;
-  document.getElementById("cdNome").value  = h.nome  || "";
-  document.getElementById("cdCNPJ").value  = h.cnpj  || "";
-  document.getElementById("cdWhats").value = h.whats || "";
-  document.getElementById("cdEmail").value = h.email || "";
+  document.getElementById("cdNome").value     = h.nome     || "";
+  document.getElementById("cdCNPJ").value     = h.cnpj     || "";
+  document.getElementById("cdWhats").value    = h.whats    || "";
+  document.getElementById("cdEmail").value    = h.email    || "";
+  document.getElementById("cdEndereco").value = h.endereco || "";
   cdOrcItems = (h.items || []).map(function(i){ return Object.assign({}, i, {id: cdNextId++}); });
   cdRenderItems();
 }
@@ -15925,7 +16016,7 @@ function novoOrcCD() {
   cdOrcItems = [];
   CD_NUM_ORC = cdGenNum();
   (function(){ var el = document.getElementById("cdNumOrcLabel"); if(el) el.textContent = "No " + CD_NUM_ORC; })();
-  ["cdNome","cdCNPJ","cdWhats","cdEmail","cdObs"].forEach(function(id){
+  ["cdNome","cdCNPJ","cdWhats","cdEmail","cdEndereco","cdObs"].forEach(function(id){
     var el = document.getElementById(id); if(el) el.value = "";
   });
   setCdCnpjStatus("","","");
@@ -15937,10 +16028,11 @@ function gerarPDFCD() {
   if (!cdOrcItems.length) { alert("Adicione ao menos um produto."); return; }
   var nome = document.getElementById("cdNome").value.trim();
   if (!nome) { alert("Informe o nome do cliente."); return; }
-  var cnpj  = document.getElementById("cdCNPJ").value.trim();
-  var whats = document.getElementById("cdWhats").value.trim();
-  var email = document.getElementById("cdEmail").value.trim();
-  var val   = document.getElementById("cdValidade").value;
+  var cnpj     = document.getElementById("cdCNPJ").value.trim();
+  var whats    = document.getElementById("cdWhats").value.trim();
+  var email    = document.getElementById("cdEmail").value.trim();
+  var endereco = document.getElementById("cdEndereco").value.trim();
+  var val      = document.getElementById("cdValidade").value;
   var pag   = document.getElementById("cdPagamento").value;
   var fret  = document.getElementById("cdFrete").value;
   var obs   = document.getElementById("cdObs").value.trim();
@@ -15973,7 +16065,7 @@ function gerarPDFCD() {
   y = 52;
 
   /* ── Bloco cliente ── */
-  var hCli = (cnpj || whats || email) ? 28 : 16;
+  var hCli = (cnpj || whats || email) ? (endereco ? 34 : 28) : 16;
   doc.setFillColor.apply(doc, COR_BG); doc.rect(M, y-4, W-2*M, hCli, "F");
   doc.setTextColor.apply(doc, COR_CINZA); doc.setFontSize(8); doc.setFont("helvetica", "bold");
   doc.text("DADOS DO CLIENTE", M+2, y+1);
@@ -15982,6 +16074,7 @@ function gerarPDFCD() {
   if (cnpj) { doc.setFontSize(9); doc.text("CNPJ: " + cnpj, W-M, y+9, {align:"right"}); }
   var cont = [whats, email].filter(Boolean).join("   |   ");
   if (cont) { doc.setFontSize(9); doc.setTextColor(90, 100, 128); doc.text(cont, M+2, y+17); }
+  if (endereco) { doc.setFontSize(8.5); doc.setTextColor(90, 100, 128); doc.text(endereco, M+2, y+23); }
   y += hCli + 8;
 
   /* ── Cabeçalho da tabela ── */
@@ -16073,7 +16166,7 @@ function gerarPDFCD() {
   /* ── Salva historico ── */
   var hid = "cdh" + Date.now();
   var h = getCDHist();
-  h.push({id:hid, nome:nome, cnpj:cnpj, whats:whats, email:email,
+  h.push({id:hid, nome:nome, cnpj:cnpj, whats:whats, email:email, endereco:endereco,
     numOrc:CD_NUM_ORC, data:new Date().toLocaleDateString("pt-BR"),
     total:t.total, nitens:cdOrcItems.length,
     items:JSON.parse(JSON.stringify(cdOrcItems))});
@@ -16106,6 +16199,9 @@ function gerarPDFCD() {
         <div class="fr">
           <div class="fl"><label>WhatsApp</label><input type="text" id="cdWhats" placeholder="(00) 00000-0000"></div>
           <div class="fl"><label>E-mail</label><input type="text" id="cdEmail" placeholder="contato@empresa.com"></div>
+        </div>
+        <div class="fr full" style="margin-top:0">
+          <div class="fl"><label>Endereço</label><input type="text" id="cdEndereco" placeholder="Rua, número, bairro, cidade - UF, CEP" style="color:var(--text2)"></div>
         </div>
       </div>
       <!-- Produtos -->
